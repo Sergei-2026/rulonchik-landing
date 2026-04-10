@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Открыть на телефоне</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#F0F4F8;
+         min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;border-radius:16px;padding:36px 32px;max-width:400px;width:100%;
+           text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.10)}
+    h1{font-size:22px;color:#1F4E79;margin-bottom:6px}
+    .sub{font-size:14px;color:#999;margin-bottom:24px}
+    img{display:block;margin:0 auto 20px;border-radius:8px;border:6px solid #EFF6FF}
+    .url{background:#EFF6FF;border:2px solid #BDD7EE;border-radius:10px;padding:12px 16px;
+          font-size:20px;font-weight:700;color:#1F4E79;margin-bottom:12px;word-break:break-all}
+    .btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;
+          font-weight:600;cursor:pointer;margin-bottom:8px}
+    .blue{background:#2E75B6;color:#fff}
+    .green{background:#C6EFCE;color:#375623}
+    #msg{color:#375623;font-size:13px;height:18px;margin-bottom:6px}
+    .steps{background:#F0F7FF;border-radius:10px;padding:16px 18px;text-align:left;
+            font-size:14px;line-height:1.9;color:#333;margin-top:8px}
+    .steps b{color:#1F4E79}
+    .tag{display:inline-block;background:#1F4E79;color:#fff;border-radius:4px;
+          padding:1px 7px;font-size:12px;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Открыть на телефоне</h1>
+  <p class="sub">Наведите камеру телефона на QR-код</p>
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAAEYAQAAAACv9dQhAAABnElEQVR4nO1Z3cpCMQxLxPd/5XwXaev8ELyyK2xniDtbwFD6k1YKX5/Hd8jFXMzFfHieAOitCAAC/cnTeZy77QMBACHKX7ZOnM7j3I8hCYC2iv2nTqdy7sE8l70oyn7zVtWmcd6GEQXGmsBnAMb+Y3chxDW+0ommce7EQEoz6N+q+2mcu/2nTMEqWVxT0DTO3RinmyphEiEAzJuJnDsxoghKVKnCSEF+nci5C2NJaHMoXq0Sfc7D9TMFwLqHrl6qwx18ZmIW8zgRkZA3W/jMwriZyCbMS0AmoZGcuzBhlmhMAVQf727s9PxjjABKgBT6WSKgaMZmcu7BVH6uriJLuy+v/yAiSuRLM0sMgbiDzyBM6B8PxDwiK0mU99M4b8nP1JKqa8Cqbj4TMQwHisY0poa3vwBWlVzzn7cm4/T4Wv+/gCJJp2BUP5+RGElShFjoH2siHq9/PF+NcuX5szIRZaxN49xvn3xq/BNudPXziiHoKJMjjXQtm8z515ga97zGYlXUePOz4yuiisu+WvrD88+qf379WxdzMadh/gABHrorq8bjvgAAAABJRU5ErkJggg==" width="220" height="220" alt="QR">
+  <div class="url">http://192.168.1.41:3500</div>
+  <div id="msg"></div>
+  <button class="btn blue" onclick="copyUrl()">Скопировать адрес</button>
+  <button class="btn green" onclick="location='http://192.168.1.41:3500'">Открыть приложение</button>
+  <div class="steps">
+    <b>Android Chrome:</b> меню <span class="tag">...</span> &rarr; Добавить на главный экран<br><br>
+    <b>iPhone Safari:</b> кнопка <span class="tag">поделиться</span> &rarr; На экран Домой<br><br>
+    Телефон должен быть в той же Wi-Fi сети.
+  </div>
+</div>
+<script>
+function copyUrl(){
+  navigator.clipboard.writeText('http://192.168.1.41:3500')
+    .then(()=>{document.getElementById('msg').textContent='Скопировано!';
+               setTimeout(()=>document.getElementById('msg').textContent='',2000)});
+}
+</script>
+</body></html>
