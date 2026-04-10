@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Рулончик — трикотаж компакт-пенье</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ivory:    #F8F4EE;
+      --stone:    #EDE7DC;
+      --white:    #FFFFFF;
+      --line:     #DDD5C8;
+      --espresso: #1C1714;
+      --mocha:    #6B5044;
+      --taupe:    #9E8878;
+      --warm:     #C4A882;
+      --sage:     #7D8C7A;
+      --r:        14px;
+      --serif:    'Cormorant Garant', Georgia, serif;
+      --sans:     'Inter', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--ivory);
+      color: var(--espresso);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(248,244,238,.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-brand {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      color: var(--espresso);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: .78rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--taupe);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--espresso); }
+
+    .nav-cta {
+      font-size: .78rem !important;
+      font-weight: 600 !important;
+      color: var(--white) !important;
+      background: var(--espresso);
+      padding: 9px 20px;
+      border-radius: 100px;
+      transition: background .2s !important;
+    }
+    .nav-cta:hover { background: var(--mocha) !important; color: var(--white) !important; }
+
+    @media (max-width: 700px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 120px 24px 80px;
+      text-align: center;
+      background:
+        radial-gradient(ellipse 90% 50% at 50% 0%, rgba(196,168,130,.2) 0%, transparent 60%),
+        var(--ivory);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* subtle woven texture */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(196,168,130,.04) 3px, rgba(196,168,130,.04) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(196,168,130,.04) 3px, rgba(196,168,130,.04) 4px);
+      pointer-events: none;
+    }
+
+    .hero-inner { position: relative; z-index: 1; max-width: 820px; }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--taupe);
+      margin-bottom: 32px;
+    }
+    .hero-eyebrow::before,
+    .hero-eyebrow::after {
+      content: '';
+      display: block;
+      width: 36px;
+      height: 1px;
+      background: var(--warm);
+    }
+
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      font-weight: 600;
+      line-height: 1.02;
+      letter-spacing: -.01em;
+      color: var(--espresso);
+      margin-bottom: 10px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--mocha);
+    }
+
+    .hero-sub {
+      font-family: var(--serif);
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      font-weight: 400;
+      color: var(--taupe);
+      letter-spacing: .04em;
+      margin-bottom: 36px;
+    }
+
+    .hero-desc {
+      font-size: .95rem;
+      font-weight: 400;
+      color: var(--taupe);
+      max-width: 500px;
+      margin: 0 auto 52px;
+      line-height: 1.75;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--espresso);
+      color: var(--white);
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      padding: 15px 32px;
+      border-radius: 100px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background .25s, transform .2s, box-shadow .25s;
+      animation: glow 3s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(107,80,68,.35); }
+      50%       { box-shadow: 0 0 0 14px rgba(107,80,68,0); }
+    }
+
+    .btn-primary:hover {
+      background: var(--mocha);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(107,80,68,.28);
+      animation: none;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--espresso);
+      font-size: .85rem;
+      font-weight: 500;
+      letter-spacing: .03em;
+      padding: 14px 28px;
+      border-radius: 100px;
+      text-decoration: none;
+      border: 1.5px solid var(--line);
+      transition: border-color .2s, background .2s;
+    }
+    .btn-ghost:hover { border-color: var(--warm); background: rgba(196,168,130,.08); }
+
+    .hero-contacts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px 16px;
+      font-size: .8rem;
+      color: var(--taupe);
+    }
+    .hero-contacts a {
+      color: var(--mocha);
+      font-weight: 500;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+    .hero-contacts a:hover { opacity: .65; }
+    .hero-contacts .dot { color: var(--line); font-size: .5rem; }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--line) 30%, var(--line) 70%, transparent);
+      margin: 0 auto;
+      max-width: 1100px;
+    }
+
+    /* ─── SECTION SHARED ─── */
+    .section { padding: 96px 24px; }
+    .section-alt { background: var(--stone); }
+    .container { max-width: 1060px; margin: 0 auto; }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--taupe);
+      margin-bottom: 16px;
+    }
+    .eyebrow span { display: block; width: 28px; height: 1px; background: var(--warm); }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      font-weight: 600;
+      line-height: 1.12;
+      text-align: center;
+      color: var(--espresso);
+      margin-bottom: 56px;
+    }
+    .section-title em { font-style: italic; font-weight: 400; color: var(--mocha); }
+
+    /* ─── ADVANTAGES ─── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    @media (max-width: 760px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--white);
+      padding: 40px 32px;
+      transition: background .25s;
+    }
+    .card:hover { background: #FFFCF8; }
+
+    .card-num {
+      font-family: var(--serif);
+      font-size: 3.5rem;
+      font-weight: 300;
+      color: var(--line);
+      line-height: 1;
+      margin-bottom: 20px;
+      letter-spacing: -.02em;
+    }
+
+    .card-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+      background: var(--ivory);
+    }
+
+    .card h3 {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      color: var(--espresso);
+    }
+
+    .card p {
+      font-size: .875rem;
+      color: var(--taupe);
+      line-height: 1.75;
+    }
+
+    /* ─── FOR WHOM ─── */
+    .audience-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px 80px;
+      align-items: start;
+    }
+
+    @media (max-width: 700px) {
+      .audience-wrap { grid-template-columns: 1fr; gap: 32px; }
+    }
+
+    .audience-left h2 { text-align: left; margin-bottom: 28px; }
+    .audience-left p { font-size: .9rem; color: var(--taupe); line-height: 1.8; margin-bottom: 32px; }
+
+    .audience-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+
+    .audience-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .al-icon {
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      background: var(--ivory);
+      border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .al-text strong { display: block; font-size: .88rem; font-weight: 600; color: var(--espresso); margin-bottom: 2px; }
+    .al-text span { font-size: .78rem; color: var(--taupe); }
+
+    .benefits-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .benefit-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      background: var(--white);
+      font-size: .875rem;
+      color: var(--taupe);
+    }
+
+    .benefit-row svg { flex-shrink: 0; color: var(--sage); }
+
+    /* ─── HELP BLOCK ─── */
+    .help-banner {
+      background: var(--espresso);
+      border-radius: 20px;
+      padding: 64px 48px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+    }
+
+    @media (max-width: 700px) {
+      .help-banner { grid-template-columns: 1fr; padding: 40px 28px; text-align: center; }
+      .help-banner .btn-banner { margin: 0 auto; }
+    }
+
+    .help-banner .eyebrow { justify-content: flex-start; color: var(--warm); }
+    .help-banner .eyebrow span { background: rgba(196,168,130,.4); }
+
+    @media (max-width: 700px) {
+      .help-banner .eyebrow { justify-content: center; }
+    }
+
+    .help-banner h2 {
+      font-family: var(--serif);
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    @media (max-width: 700px) {
+      .help-banner h2 { text-align: center; }
+    }
+
+    .help-banner p {
+      font-size: .9rem;
+      color: rgba(255,255,255,.55);
+      max-width: 420px;
+      line-height: 1.75;
+    }
+
+    .btn-banner {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--white);
+      color: var(--espresso);
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      padding: 15px 28px;
+      border-radius: 100px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background .2s, transform .2s;
+    }
+    .btn-banner:hover { background: var(--ivory); transform: translateY(-2px); }
+
+    /* ─── CATALOG ─── */
+    .catalog-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    @media (max-width: 660px) {
+      .catalog-row { grid-template-columns: 1fr; }
+    }
+
+    .catalog-cell {
+      background: var(--white);
+      padding: 40px 36px;
+    }
+
+    .catalog-cell .eyebrow { justify-content: flex-start; margin-bottom: 12px; }
+
+    .catalog-cell h3 {
+      font-family: var(--serif);
+      font-size: 1.7rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--espresso);
+    }
+
+    .catalog-cell p {
+      font-size: .875rem;
+      color: var(--taupe);
+      line-height: 1.75;
+      margin-bottom: 28px;
+    }
+
+    /* ─── SOCIALS ─── */
+    .socials-wrap {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .social-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 24px 22px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      text-decoration: none;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .social-card:hover {
+      border-color: var(--warm);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(107,80,68,.1);
+    }
+
+    .social-card-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--ivory);
+      border: 1px solid var(--line);
+    }
+
+    .social-card-name {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--espresso);
+      display: block;
+    }
+
+    .social-card-action {
+      font-size: .75rem;
+      color: var(--taupe);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--line);
+      background: var(--white);
+      padding: 36px 24px;
+    }
+
+    .footer-inner {
+      max-width: 1060px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--espresso);
+    }
+
+    .footer-meta { font-size: .78rem; color: var(--taupe); }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+    }
+
+    .footer-links a {
+      font-size: .8rem;
+      color: var(--taupe);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--mocha); }
+
+    /* ─── SCROLL REVEAL ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════ NAV ══════ -->
+<nav>
+  <a href="#" class="nav-brand">Рулончик</a>
+  <ul class="nav-links">
+    <li><a href="#advantages">Преимущества</a></li>
+    <li><a href="#audience">Для кого</a></li>
+    <li><a href="#catalog">Каталог</a></li>
+    <li><a href="https://wa.me/79958827067" target="_blank" rel="noopener" class="nav-cta">Написать нам</a></li>
+  </ul>
+</nav>
+
+<!-- ══════ HERO ══════ -->
+<section class="hero">
+  <div class="hero-inner">
+
+    <div class="hero-eyebrow">Трикотаж компакт-пенье</div>
+
+    <h1>
+      <em>Ткань,</em> которая<br>остаётся с вами<br>навсегда
+    </h1>
+
+    <p class="hero-sub">— Рулончик —</p>
+
+    <p class="hero-desc">
+      Компакт-пенье высшего сорта с резкой от 10&nbsp;см,
+      постоянством оттенков годами и всегда в наличии.
+      Быстрая отправка и консультация по выбору.
+    </p>
+
+    <div class="hero-actions">
+      <a href="https://wa.me/79958827067" class="btn-primary" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Подобрать ткань с консультантом
+      </a>
+      <a href="#catalog" class="btn-ghost">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        Каталог с ценами
+      </a>
+    </div>
+
+    <div class="hero-contacts">
+      <a href="tel:+79958827067">+7 (995) 882-70-67</a>
+      <span class="dot">●</span>
+      <a href="https://wa.me/79958827067" target="_blank" rel="noopener">WhatsApp</a>
+      <span class="dot">●</span>
+      <a href="https://t.me/Rulonchik_msk" target="_blank" rel="noopener">Telegram</a>
+      <span class="dot">●</span>
+      <a href="https://vk.me/rulonchik_msk" target="_blank" rel="noopener">Макс</a>
+      <span class="dot">●</span>
+      <a href="https://t.me/Rulonchik_msk" target="_blank" rel="noopener">@Rulonchik_msk</a>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════ ADVANTAGES ══════ -->
+<section class="section" id="advantages">
+  <div class="container">
+
+    <div class="eyebrow reveal"><span></span>Почему выбирают нас<span></span></div>
+    <h2 class="section-title reveal">Три причины, по которым<br><em>изделия служат годами</em></h2>
+
+    <div class="cards reveal">
+
+      <div class="card">
+        <div class="card-num">01</div>
+        <div class="card-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            <path d="M8 12l2.5 2.5L16 9"/>
+          </svg>
+        </div>
+        <h3>Компакт-пенье высшего сорта</h3>
+        <p>Минимальная усадка, долговечность и износостойкость. Приятная к телу ткань с отличным составом. Одежда остаётся комфортной даже после сотен стирок.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-num">02</div>
+        <div class="card-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <h3>Резка от 10&nbsp;см + постоянство оттенков</h3>
+        <p>Берите ровно столько, сколько нужно. Через несколько лет вы докупите точно тот же цвет — мы всегда держим нужные оттенки на складе.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-num">03</div>
+        <div class="card-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13"/>
+            <path d="M22 2L15 22l-4-9-9-4 20-7z"/>
+          </svg>
+        </div>
+        <h3>Быстрая отправка и помощь консультантов</h3>
+        <p>Не теряйтесь в ассортименте — мы подберём идеальную ткань под вашу задачу. Заказы отправляем оперативно: проекты не простаивают.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════ FOR WHOM ══════ -->
+<section class="section section-alt" id="audience">
+  <div class="container">
+    <div class="audience-wrap">
+
+      <div class="audience-left reveal">
+        <div class="eyebrow" style="justify-content:flex-start;margin-bottom:14px;"><span></span>Для кого</div>
+        <h2 class="section-title" style="text-align:left;">Подойдёт всем,<br>кто ценит <em>качество</em></h2>
+        <p>Наши покупатели — разные люди с одним общим: они не хотят переплачивать и расстраиваться из-за ткани, которая быстро теряет вид.</p>
+
+        <ul class="audience-list">
+          <li>
+            <div class="al-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </div>
+            <div class="al-text">
+              <strong>Швеи индивидуального пошива</strong>
+              <span>Качество и точность цвета — обязательны</span>
+            </div>
+          </li>
+          <li>
+            <div class="al-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8l-2 4h12l-2-4z"/></svg>
+            </div>
+            <div class="al-text">
+              <strong>Начинающие бренды</strong>
+              <span>Небольшие партии без переплат, стабильный цвет</span>
+            </div>
+          </li>
+          <li>
+            <div class="al-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            </div>
+            <div class="al-text">
+              <strong>Домашние мастера</strong>
+              <span>Хобби-шитьё: от 10&nbsp;см, без переплаты</span>
+            </div>
+          </li>
+          <li>
+            <div class="al-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E8878" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8l-9-4-9 4v8l9 4 9-4z"/></svg>
+            </div>
+            <div class="al-text">
+              <strong>Несёте ткань в ателье</strong>
+              <span>Не умеете шить? Поможем выбрать правильно</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="reveal">
+        <div class="eyebrow" style="justify-content:flex-start;margin-bottom:20px;"><span></span>Ваша выгода</div>
+        <div class="benefits-grid">
+          <div class="benefit-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7D8C7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Долговечность экономит на перешиве
+          </div>
+          <div class="benefit-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7D8C7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Резка от 10&nbsp;см — никакой переплаты
+          </div>
+          <div class="benefit-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7D8C7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Всегда можно докупить тот же оттенок
+          </div>
+          <div class="benefit-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7D8C7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Быстрая отправка — проекты не ждут
+          </div>
+          <div class="benefit-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7D8C7A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Консультация — не ошибётесь с выбором
+          </div>
+        </div>
+
+        <div style="margin-top:28px; padding:28px; background:var(--white); border:1px solid var(--line); border-radius:12px;">
+          <p style="font-family:var(--serif);font-size:1.25rem;font-weight:600;color:var(--espresso);line-height:1.4;margin-bottom:8px;">
+            «Не знаете, что взять?<br>Просто спросите.»
+          </p>
+          <p style="font-size:.8rem;color:var(--taupe);">Консультация бесплатная — мы подберём ткань под вашу задачу за несколько сообщений.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════ HELP BLOCK ══════ -->
+<section class="section" id="consult">
+  <div class="container">
+    <div class="help-banner reveal">
+      <div>
+        <div class="eyebrow" style="justify-content:flex-start;margin-bottom:16px;"><span></span>Поможем не запутаться</div>
+        <h2>Не знаете,<br>какую ткань выбрать?</h2>
+        <p>Ассортимент огромный, и легко ошибиться. Напишите нам — консультанты бесплатно подберут нужную ткань под вашу задачу.</p>
+      </div>
+      <a href="https://wa.me/79958827067" class="btn-banner" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Написать консультанту
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════ CATALOG ══════ -->
+<section class="section section-alt" id="catalog">
+  <div class="container">
+    <div class="eyebrow reveal"><span></span>Ассортимент<span></span></div>
+    <h2 class="section-title reveal">Каталог с <em>ценами</em></h2>
+    <div class="catalog-row reveal">
+
+      <div class="catalog-cell">
+        <div class="eyebrow" style="justify-content:flex-start;margin-bottom:10px;"><span></span>Telegram-канал</div>
+        <h3>Весь ассортимент</h3>
+        <p>Все ткани, цвета и актуальные цены. Обновляется регулярно — подпишитесь, чтобы не пропускать новинки и наличие.</p>
+        <a href="https://t.me/Rulonchik_msk" class="btn-ghost" target="_blank" rel="noopener" style="display:inline-flex;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          Открыть каталог
+        </a>
+      </div>
+
+      <div class="catalog-cell" style="background:var(--ivory);">
+        <div class="eyebrow" style="justify-content:flex-start;margin-bottom:10px;"><span></span>Нужна помощь?</div>
+        <h3>Помощь консультанта</h3>
+        <p>Если не нашли нужный цвет или ткань — спросите напрямую. Мы ответим быстро и предложим подходящий вариант.</p>
+        <a href="https://wa.me/79958827067" class="btn-primary" target="_blank" rel="noopener" style="display:inline-flex;animation:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Задать вопрос
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════ SOCIALS ══════ -->
+<section class="section">
+  <div class="container">
+    <div class="eyebrow reveal"><span></span>Мы в соцсетях<span></span></div>
+    <h2 class="section-title reveal">Подписывайтесь,<br>чтобы видеть <em>новинки</em></h2>
+    <div class="socials-wrap reveal">
+
+      <!-- Telegram -->
+      <a href="https://t.me/Rulonchik_msk" class="social-card" target="_blank" rel="noopener">
+        <div class="social-card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M5.5 11.8l2.9 1.1 1.1 3.6 1.7-1.6 3.5 2.5 2.8-9.5-12 3.9z" fill="#2CA5E0"/>
+            <path d="M8.4 12.9l.4 3.6 1.7-1.6" fill="#1a8ab5"/>
+          </svg>
+        </div>
+        <div>
+          <span class="social-card-name">Telegram-канал</span>
+          <span class="social-card-action">@Rulonchik_msk →</span>
+        </div>
+      </a>
+
+      <!-- WhatsApp -->
+      <a href="https://wa.me/79958827067" class="social-card" target="_blank" rel="noopener">
+        <div class="social-card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M17.5 14.4c-.3-.1-1.6-.8-1.8-.9-.2-.1-.4-.1-.6.1-.2.2-.7.9-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.2-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.7 4.2 3.7 2.4 1 2.4.7 2.9.6.4 0 1.4-.6 1.6-1.1.2-.5.2-1 .1-1.1z" fill="#25D366"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.06L2 22l5.09-1.34A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" stroke="#25D366" stroke-width="1.2" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <span class="social-card-name">WhatsApp</span>
+          <span class="social-card-action">+7 (995) 882-70-67 →</span>
+        </div>
+      </a>
+
+      <!-- VK -->
+      <a href="https://vk.com/rulonchik_msk" class="social-card" target="_blank" rel="noopener">
+        <div class="social-card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M13.6 16.2h-1.4c-.5 0-.6-.4-.6-.4S10 13.6 9.4 13.3c-.3-.2-.3.1-.3.1v2c0 .5-.2.8-.7.8H7c-1.1 0-2.3-.7-3.1-1.9-1.2-1.6-2-4.4.2-4.4.7 0 1.2.6 1.2.6s1-2.4 2.6-2.4c.5 0 .7.2.7.7v2.5c0 .4.2.7.5.7.6 0 1.2-1.7 1.4-2.5.1-.4.4-.7.8-.7h.8c.5 0 .7.4.4.8-.5.8-.9 2-1.1 2.7-.2.6.3.7.6.4 1.3-1.1 2.2-3.4 2.2-3.4.2-.5.6-.6.9-.6h.9c.5 0 .6.3.4.7 0 0-.9 2.5-2.5 3.9-.4.4-.1.6.3.6.5 0 1.5-1.1 1.5-1.1.2-.3.5-.4.8-.1l.6.6c.4.4.2.8-.1 1.1-.7.6-1.6.8-2.5.8z" fill="#0077FF"/>
+          </svg>
+        </div>
+        <div>
+          <span class="social-card-name">ВКонтакте</span>
+          <span class="social-card-action">rulonchik_msk →</span>
+        </div>
+      </a>
+
+      <!-- MAX -->
+      <a href="https://vk.me/rulonchik_msk" class="social-card" target="_blank" rel="noopener">
+        <div class="social-card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="6" fill="#0077FF" opacity=".12"/>
+            <text x="4" y="17" font-family="Arial Black, sans-serif" font-size="10" font-weight="900" fill="#0077FF">MAX</text>
+          </svg>
+        </div>
+        <div>
+          <span class="social-card-name">Мессенджер Макс</span>
+          <span class="social-card-action">rulonchik_msk →</span>
+        </div>
+      </a>
+
+      <!-- Instagram -->
+      <a href="https://www.instagram.com/rulonchik_msk?igsh=MjlzZmp3dzAyZ3F3" class="social-card" target="_blank" rel="noopener">
+        <div class="social-card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="ig-g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#f09433"/>
+                <stop offset=".5" stop-color="#e6683c"/>
+                <stop offset="1" stop-color="#dc2743"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig-g)" stroke-width="1.8" fill="none"/>
+            <circle cx="12" cy="12" r="4.5" stroke="url(#ig-g)" stroke-width="1.5" fill="none"/>
+            <circle cx="17" cy="7" r="1" fill="#e6683c"/>
+          </svg>
+        </div>
+        <div>
+          <span class="social-card-name">Instagram</span>
+          <span class="social-card-action">@rulonchik_msk →</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════ FOOTER ══════ -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Рулончик</div>
+      <div class="footer-meta" style="margin-top:4px;">© 2025 — трикотаж компакт-пенье</div>
+    </div>
+    <div class="footer-links">
+      <a href="tel:+79958827067">+7 (995) 882-70-67</a>
+      <a href="https://wa.me/79958827067" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="https://t.me/Rulonchik_msk" target="_blank" rel="noopener">Telegram</a>
+      <a href="https://vk.me/rulonchik_msk" target="_blank" rel="noopener">Макс</a>
+      <a href="https://t.me/Rulonchik_msk" target="_blank" rel="noopener">@Rulonchik_msk</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const els = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
