@@ -322,6 +322,7 @@
 <header>
   <h1>💰 Личный бюджет</h1>
   <div class="month" id="headerMonth"></div>
+  <div id="serverStatus" style="font-size:11px;opacity:.8;margin-top:2px;">● подключение…</div>
 </header>
 
 <!-- ── СТРАНИЦА: ГЛАВНАЯ ── -->
@@ -531,47 +532,143 @@ const CAT_ICONS = {
 };
 
 // ═══════════════════════════════════════════════════════
-// СОСТОЯНИЕ + API
+// СОСТОЯНИЕ + API + РЕЗЕРВНОЕ ХРАНИЛИЩЕ
 // ═══════════════════════════════════════════════════════
 let currentType  = 'expense';
 let transactions = [];
+let serverOnline = false;
 
-// Все запросы идут на тот же хост, откуда загружена страница
-const API = '/api/data';
+const API      = '/api/data';
+const LS_KEY   = 'budget_tx';        // резерв в браузере
+const LS_DIRTY = 'budget_tx_dirty';  // флаг: есть несинхронизированные данные
 
-async function loadFromServer() {
+// ── localStorage (всегда доступен) ──────────────────────────────────
+function lsSave() {
   try {
-    const r = await fetch(API);
-    transactions = await r.json();
-  } catch (e) {
-    showToast('Нет связи с сервером');
-    transactions = [];
+    localStorage.setItem(LS_KEY, JSON.stringify(transactions));
+  } catch(e) {}
+}
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+// ── Индикатор статуса сервера ─────────────────────────────────────
+function setServerStatus(online) {
+  serverOnline = online;
+  const el = document.getElementById('serverStatus');
+  if (!el) return;
+  if (online) {
+    el.textContent = '● онлайн';
+    el.style.color = '#4CAF50';
+  } else {
+    el.textContent = '● офлайн — данные сохранены локально';
+    el.style.color = '#FF9800';
   }
 }
 
-async function saveToServer() {
+// ── Загрузка: сервер → если пуст/недоступен → localStorage ─────────
+async function loadData() {
+  // Сначала показываем локальные данные мгновенно
+  const local = lsLoad();
+  if (local.length > 0) {
+    transactions = local;
+    renderAll();
+  }
+
   try {
-    await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(transactions),
-    });
+    const r = await fetch(API, { signal: AbortSignal.timeout(4000) });
+    const serverData = await r.json();
+
+    // Если на сервере больше данных — берём серверные
+    // Если localStorage новее (dirty) — отправляем их на сервер
+    const dirty = localStorage.getItem(LS_DIRTY) === '1';
+    if (dirty && local.length >= serverData.length) {
+      // Локальные данные новее — синхронизируем на сервер
+      await pushToServer(local);
+      transactions = local;
+      localStorage.removeItem(LS_DIRTY);
+      showToast('Данные синхронизированы с сервером');
+    } else {
+      transactions = serverData.length > 0 ? serverData : local;
+      lsSave();
+    }
+    setServerStatus(true);
   } catch (e) {
-    showToast('Ошибка сохранения');
+    // Сервер недоступен — работаем с localStorage
+    transactions = local;
+    setServerStatus(false);
+  }
+  renderAll();
+}
+
+// ── Сохранение: и в localStorage, и на сервер ───────────────────────
+async function saveData() {
+  // 1. Сначала всегда сохраняем локально — это мгновенно и надёжно
+  lsSave();
+
+  // 2. Пробуем отправить на сервер
+  try {
+    await pushToServer(transactions);
+    localStorage.removeItem(LS_DIRTY);
+    setServerStatus(true);
+  } catch (e) {
+    // Сервер недоступен — помечаем как «надо синхронизировать»
+    localStorage.setItem(LS_DIRTY, '1');
+    setServerStatus(false);
   }
 }
 
-// Автообновление каждые 5 секунд (синхронизация между устройствами)
+async function pushToServer(data) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    signal: AbortSignal.timeout(4000),
+  });
+  if (!r.ok) throw new Error('Server error');
+}
+
+// ── Автосинхронизация ─────────────────────────────────────────────
 function startAutoSync() {
   setInterval(async () => {
-    const prev = transactions.length;
-    await loadFromServer();
-    if (transactions.length !== prev) {
-      renderHome();
-      renderHistory();
-      renderStats();
+    // Если есть несинхронизированные данные — попробовать отправить
+    if (localStorage.getItem(LS_DIRTY) === '1') {
+      try {
+        await pushToServer(transactions);
+        localStorage.removeItem(LS_DIRTY);
+        setServerStatus(true);
+        showToast('Данные синхронизированы');
+      } catch(e) {}
+      return;
     }
-  }, 5000);
+
+    // Иначе — проверить обновления с других устройств
+    try {
+      const r = await fetch(API, { signal: AbortSignal.timeout(4000) });
+      const serverData = await r.json();
+      if (serverData.length !== transactions.length) {
+        transactions = serverData;
+        lsSave();
+        renderAll();
+      }
+      setServerStatus(true);
+    } catch(e) {
+      setServerStatus(false);
+    }
+  }, 10000);
+}
+
+function renderAll() {
+  populateMonthFilter();
+  renderHome();
+  renderHistory();
+  renderStats();
+  const el = document.getElementById('totalCount');
+  if (el) el.textContent = transactions.length;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -584,14 +681,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('txDate').value = toDateInput(now);
 
   setType('expense');
-
-  await loadFromServer();
-  populateMonthFilter();
-  renderHome();
-  renderHistory();
-  renderStats();
-  document.getElementById('totalCount').textContent = transactions.length;
-
+  await loadData();
   startAutoSync();
 });
 
@@ -662,7 +752,7 @@ async function addTransaction(overrides) {
   };
 
   transactions.unshift(tx);
-  await saveToServer();
+  await saveData();
 
   if (!overrides) {
     document.getElementById('amount').value = '';
@@ -774,7 +864,7 @@ function txHTML(t, showDel) {
 async function deleteTx(id) {
   if (!confirm('Удалить запись?')) return;
   transactions = transactions.filter(t => t.id !== id);
-  await saveToServer();
+  await saveData();
   renderHome();
   renderHistory();
   renderStats();
@@ -877,7 +967,7 @@ function handleImport(e) {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data)) throw new Error();
       transactions = data;
-      await saveToServer();
+      await saveData();
       renderHome(); renderHistory(); renderStats();
       showToast(`Импортировано ${data.length} записей`);
     } catch {
@@ -891,7 +981,7 @@ function handleImport(e) {
 async function clearData() {
   if (!confirm('Удалить ВСЕ записи? Это действие нельзя отменить.')) return;
   transactions = [];
-  await saveToServer();
+  await saveData();
   renderHome(); renderHistory(); renderStats();
   document.getElementById('totalCount').textContent = 0;
   showToast('Все данные удалены');

@@ -17,6 +17,10 @@ import webbrowser
 import threading
 import qrcode
 
+# Многопоточный сервер — каждое соединение в отдельном потоке
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True  # потоки завершаются вместе с сервером
+
 PORT     = 3500
 DIR      = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(DIR, "data.json")
@@ -123,6 +127,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass  # убрать лишние логи в консоль
 
+    def handle_error(self, request, client_address):
+        pass  # не падать при обрыве соединения (норма для мобильных браузеров)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self._cors()
@@ -181,9 +188,24 @@ def open_browser():
 
 threading.Thread(target=open_browser, daemon=True).start()
 
-socketserver.TCPServer.allow_reuse_address = True
-with socketserver.TCPServer(("", PORT), Handler) as httpd:
+ThreadingHTTPServer.allow_reuse_address = True
+
+# Если порт занят — подождать и попробовать снова
+import time as _time
+for attempt in range(10):
     try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("Server stopped.")
+        httpd = ThreadingHTTPServer(("", PORT), Handler)
+        break
+    except OSError:
+        print(f"Port {PORT} busy, retrying ({attempt+1}/10)...")
+        _time.sleep(2)
+else:
+    print(f"ERROR: cannot bind port {PORT}.")
+    input("Press Enter to exit...")
+    raise SystemExit(1)
+
+print(f"Server running at {APP_URL}")
+try:
+    httpd.serve_forever()
+except KeyboardInterrupt:
+    print("Server stopped.")
