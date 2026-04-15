@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#1F4E79">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Бюджет">
+  <title>Личный бюджет</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --blue:    #1F4E79;
+      --blue2:   #2E75B6;
+      --green:   #375623;
+      --green2:  #C6EFCE;
+      --red:     #C00000;
+      --red2:    #FFC7CE;
+      --yellow:  #FFF2CC;
+      --gray:    #F5F5F5;
+      --border:  #DDD;
+      --text:    #222;
+      --muted:   #888;
+      --radius:  12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--gray);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ── Шапка ── */
+    header {
+      background: var(--blue);
+      color: #fff;
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header .month { font-size: 13px; opacity: .75; margin-top: 2px; }
+
+    /* ── Баланс карточка ── */
+    .balance-card {
+      background: var(--blue2);
+      color: #fff;
+      margin: 16px 16px 0;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .balance-card .label { font-size: 12px; opacity: .8; margin-bottom: 4px; }
+    .balance-card .amount { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+    .balance-row { display: flex; gap: 12px; margin: 8px 16px 0; }
+    .mini-card {
+      flex: 1;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+    .mini-card.inc { background: var(--green2); color: var(--green); }
+    .mini-card.exp { background: var(--red2);   color: var(--red); }
+    .mini-card .mc-label { font-size: 11px; opacity: .8; }
+    .mini-card .mc-val   { font-size: 17px; font-weight: 700; margin-top: 2px; }
+
+    /* ── Секции ── */
+    section { margin: 16px 16px 0; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Быстрый ввод ── */
+    .quick-form {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    .type-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .type-btn {
+      flex: 1;
+      padding: 11px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #fff;
+      transition: all .15s;
+    }
+    .type-btn.income.active  { background: var(--green2); border-color: var(--green); color: var(--green); }
+    .type-btn.expense.active { background: var(--red2);   border-color: var(--red);   color: var(--red); }
+
+    .form-row { margin-bottom: 12px; }
+    .form-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .form-row input,
+    .form-row select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      background: #fff;
+      color: var(--text);
+      -webkit-appearance: none;
+    }
+    .form-row input:focus,
+    .form-row select:focus {
+      outline: none;
+      border-color: var(--blue2);
+    }
+
+    #amount {
+      font-size: 24px;
+      font-weight: 700;
+      text-align: right;
+      letter-spacing: -.5px;
+    }
+
+    .btn-add {
+      width: 100%;
+      padding: 14px;
+      background: var(--blue2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background .15s;
+    }
+    .btn-add:active { background: var(--blue); }
+
+    .supermarket-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--yellow);
+      color: #7A6000;
+      border: 1.5px solid #E0C000;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 14px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .supermarket-btn span { font-size: 20px; }
+
+    /* ── Список транзакций ── */
+    .tx-list { display: flex; flex-direction: column; gap: 8px; }
+    .tx-item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      position: relative;
+    }
+    .tx-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .tx-icon.inc { background: var(--green2); }
+    .tx-icon.exp { background: var(--red2); }
+    .tx-icon.sup { background: var(--yellow); }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-cat  { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .tx-amount { font-size: 16px; font-weight: 700; flex-shrink: 0; }
+    .tx-amount.inc { color: var(--green); }
+    .tx-amount.exp { color: var(--red); }
+    .tx-del {
+      position: absolute;
+      right: 4px; top: 4px;
+      background: none; border: none;
+      color: var(--muted); font-size: 16px;
+      cursor: pointer; padding: 4px 6px;
+      line-height: 1;
+    }
+
+    /* ── Нижняя навигация ── */
+    nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 200;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 10px 0 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: var(--muted);
+      transition: color .15s;
+    }
+    .nav-btn .icon { font-size: 22px; line-height: 1; }
+    .nav-btn.active { color: var(--blue2); }
+
+    /* ── Страницы ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── История ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .filter-row select {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      -webkit-appearance: none;
+    }
+
+    /* ── Аналитика ── */
+    .stat-cards { display: flex; flex-direction: column; gap: 10px; }
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .stat-card h3 { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--gray);
+      font-size: 14px;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .bar-wrap { flex: 1; margin: 0 10px; height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; }
+    .stat-row .bar      { height: 100%; border-radius: 3px; background: var(--red2); }
+    .stat-row .val      { font-weight: 700; font-size: 13px; min-width: 70px; text-align: right; }
+
+    /* ── Экспорт ── */
+    .export-area {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .btn-export {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .btn-export.csv  { background: var(--green2); color: var(--green); }
+    .btn-export.json { background: var(--yellow);  color: #7A6000; }
+    .btn-export.clr  { background: var(--red2);   color: var(--red); }
+
+    .toast {
+      position: fixed;
+      bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #333; color: #fff;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all .3s;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-state .emoji { font-size: 40px; display: block; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💰 Личный бюджет</h1>
+  <div class="month" id="headerMonth"></div>
+</header>
+
+<!-- ── СТРАНИЦА: ГЛАВНАЯ ── -->
+<div class="page active" id="page-home">
+  <div class="balance-card">
+    <div class="label">Баланс за месяц</div>
+    <div class="amount" id="balanceAmt">0 ₽</div>
+  </div>
+  <div class="balance-row">
+    <div class="mini-card inc">
+      <div class="mc-label">Доходы</div>
+      <div class="mc-val" id="incomeAmt">0 ₽</div>
+    </div>
+    <div class="mini-card exp">
+      <div class="mc-label">Расходы</div>
+      <div class="mc-val" id="expenseAmt">0 ₽</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-title">Последние записи</div>
+    <div class="tx-list" id="recentList">
+      <div class="empty-state"><span class="emoji">📋</span>Пока нет записей</div>
+    </div>
+  </section>
+</div>
+
+<!-- ── СТРАНИЦА: ДОБАВИТЬ ── -->
+<div class="page" id="page-add">
+  <section>
+    <div class="section-title">Новая запись</div>
+    <div class="quick-form">
+
+      <button class="supermarket-btn" onclick="quickSupermarket()">
+        <span>🛒</span> Быстро: Супермаркет / Гипермаркет
+      </button>
+
+      <div class="type-toggle">
+        <button class="type-btn expense active" id="btnExpense" onclick="setType('expense')">− Расход</button>
+        <button class="type-btn income"          id="btnIncome"  onclick="setType('income')">+ Доход</button>
+      </div>
+
+      <div class="form-row">
+        <label>Сумма</label>
+        <input type="number" id="amount" placeholder="0" inputmode="decimal" min="0" step="0.01">
+      </div>
+
+      <div class="form-row">
+        <label>Категория</label>
+        <select id="category"></select>
+      </div>
+
+      <div class="form-row">
+        <label>Описание / Магазин (необязательно)</label>
+        <input type="text" id="description" placeholder="Лента, ТЦ Мега…">
+      </div>
+
+      <div class="form-row">
+        <label>Дата</label>
+        <input type="date" id="txDate">
+      </div>
+
+      <button class="btn-add" onclick="addTransaction()">Добавить запись</button>
+    </div>
+  </section>
+</div>
+
+<!-- ── СТРАНИЦА: ИСТОРИЯ ── -->
+<div class="page" id="page-history">
+  <section>
+    <div class="section-title">История</div>
+    <div class="filter-row">
+      <select id="filterMonth" onchange="renderHistory()"></select>
+      <select id="filterType" onchange="renderHistory()">
+        <option value="">Все</option>
+        <option value="income">Доходы</option>
+        <option value="expense">Расходы</option>
+      </select>
+    </div>
+    <div class="tx-list" id="historyList"></div>
+  </section>
+</div>
+
+<!-- ── СТРАНИЦА: АНАЛИТИКА ── -->
+<div class="page" id="page-stats">
+  <section>
+    <div class="section-title">Аналитика</div>
+    <div class="stat-cards" id="statCards"></div>
+  </section>
+</div>
+
+<!-- ── СТРАНИЦА: ЭКСПОРТ ── -->
+<div class="page" id="page-export">
+  <section>
+    <div class="section-title">Экспорт данных</div>
+    <div class="export-area">
+      <p style="font-size:14px;color:var(--muted);margin-bottom:14px;">
+        Экспорт в CSV — можно открыть в Excel или импортировать в таблицу бюджета.
+      </p>
+      <button class="btn-export csv"  onclick="exportCSV()">📥 Скачать CSV (Excel)</button>
+      <button class="btn-export json" onclick="exportJSON()">📦 Резервная копия JSON</button>
+      <button class="btn-export json" style="background:#E8F4FD;color:#1F4E79;" onclick="importJSON()">📤 Восстановить из JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+      <hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">
+      <button class="btn-export clr" onclick="clearData()">🗑 Очистить все данные</button>
+    </div>
+    <section style="margin-top:0;">
+      <div class="section-title" style="margin-top:16px;">Всего записей: <span id="totalCount">0</span></div>
+    </section>
+  </section>
+</div>
+
+<!-- ── Навигация ── -->
+<nav>
+  <button class="nav-btn active" id="nav-home"    onclick="showPage('home')">
+    <span class="icon">🏠</span>Главная
+  </button>
+  <button class="nav-btn" id="nav-add"     onclick="showPage('add')">
+    <span class="icon">➕</span>Добавить
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="showPage('history')">
+    <span class="icon">📋</span>История
+  </button>
+  <button class="nav-btn" id="nav-stats"   onclick="showPage('stats')">
+    <span class="icon">📊</span>Анализ
+  </button>
+  <button class="nav-btn" id="nav-export"  onclick="showPage('export')">
+    <span class="icon">💾</span>Экспорт
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// КАТЕГОРИИ
+// ═══════════════════════════════════════════════════════
+const INCOME_CATS = [
+  "Зарплата (основная)",
+  "Подработка / фриланс",
+  "Премия / бонус",
+  "Социальные выплаты",
+  "Проценты / инвестиции",
+  "Подарки / прочие доходы",
+];
+
+const EXPENSE_CATS = [
+  "Супермаркет / гипермаркет",
+  "Продукты (малые покупки)",
+  "Кафе и рестораны",
+  "Аренда / ипотека",
+  "Коммунальные услуги",
+  "Интернет и связь",
+  "Ремонт / мебель",
+  "Общественный транспорт",
+  "Такси",
+  "Авто (топливо, парковка)",
+  "Медицина / аптека",
+  "Спорт и фитнес",
+  "Одежда и обувь",
+  "Косметика / гигиена",
+  "Образование / курсы",
+  "Развлечения / хобби",
+  "Подписки (стриминг и др.)",
+  "Путешествия / отдых",
+  "Кредит / долг",
+  "Накопления / инвестиции",
+  "Прочие расходы",
+];
+
+const CAT_ICONS = {
+  "Супермаркет / гипермаркет": "🛒",
+  "Продукты (малые покупки)":  "🥦",
+  "Кафе и рестораны":          "☕",
+  "Аренда / ипотека":          "🏠",
+  "Коммунальные услуги":       "💡",
+  "Интернет и связь":          "📡",
+  "Ремонт / мебель":           "🔧",
+  "Общественный транспорт":    "🚌",
+  "Такси":                     "🚕",
+  "Авто (топливо, парковка)":  "⛽",
+  "Медицина / аптека":         "💊",
+  "Спорт и фитнес":            "🏋️",
+  "Одежда и обувь":            "👗",
+  "Косметика / гигиена":       "🧴",
+  "Образование / курсы":       "📚",
+  "Развлечения / хобби":       "🎮",
+  "Подписки (стриминг и др.)": "📺",
+  "Путешествия / отдых":       "✈️",
+  "Кредит / долг":             "💳",
+  "Накопления / инвестиции":   "📈",
+  "Прочие расходы":            "📦",
+  "Зарплата (основная)":       "💼",
+  "Подработка / фриланс":      "💻",
+  "Премия / бонус":            "🎯",
+  "Социальные выплаты":        "🏛️",
+  "Проценты / инвестиции":     "📈",
+  "Подарки / прочие доходы":   "🎁",
+};
+
+// ═══════════════════════════════════════════════════════
+// ДАННЫЕ — только localStorage
+// ═══════════════════════════════════════════════════════
+let currentType  = 'expense';
+let transactions = [];
+
+const LS_KEY = 'budget_tx';
+
+function lsSave() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(transactions)); } catch(e) {}
+}
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function loadData() {
+  transactions = lsLoad();
+  renderAll();
+}
+
+function saveData() {
+  lsSave();
+}
+
+// ═══════════════════════════════════════════════════════
+// ИНИЦИАЛИЗАЦИЯ
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  document.getElementById('headerMonth').textContent =
+    now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  document.getElementById('txDate').value = toDateInput(now);
+
+  setType('expense');
+  loadData();
+});
+
+function toDateInput(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y, m, day] = iso.split('-');
+  return `${day}.${m}.${y}`;
+}
+
+function fmtRub(n) {
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency', currency: 'RUB', maximumFractionDigits: 0
+  }).format(n);
+}
+
+function renderAll() {
+  populateMonthFilter();
+  renderHome();
+  renderHistory();
+  renderStats();
+  const el = document.getElementById('totalCount');
+  if (el) el.textContent = transactions.length;
+}
+
+// ═══════════════════════════════════════════════════════
+// НАВИГАЦИЯ
+// ═══════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'home')    renderHome();
+  if (name === 'history') renderHistory();
+  if (name === 'stats')   renderStats();
+  if (name === 'export')  document.getElementById('totalCount').textContent = transactions.length;
+}
+
+// ═══════════════════════════════════════════════════════
+// ТИП И КАТЕГОРИИ
+// ═══════════════════════════════════════════════════════
+function setType(type) {
+  currentType = type;
+  document.getElementById('btnIncome').classList.toggle('active',  type === 'income');
+  document.getElementById('btnExpense').classList.toggle('active', type === 'expense');
+  fillCategories(type);
+}
+
+function fillCategories(type) {
+  const sel  = document.getElementById('category');
+  const cats = type === 'income' ? INCOME_CATS : EXPENSE_CATS;
+  sel.innerHTML = cats.map(c =>
+    `<option value="${c}">${(CAT_ICONS[c] || '•')} ${c}</option>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// ДОБАВИТЬ ЗАПИСЬ
+// ═══════════════════════════════════════════════════════
+function addTransaction(overrides) {
+  const amount = parseFloat(
+    overrides?.amount ?? document.getElementById('amount').value
+  );
+  if (!amount || amount <= 0) { showToast('Введите сумму'); return; }
+
+  const tx = {
+    id:          Date.now(),
+    type:        overrides?.type        ?? currentType,
+    category:    overrides?.category    ?? document.getElementById('category').value,
+    description: overrides?.description ?? document.getElementById('description').value.trim(),
+    amount:      amount,
+    date:        overrides?.date        ?? document.getElementById('txDate').value,
+  };
+
+  transactions.unshift(tx);
+  saveData();
+
+  if (!overrides) {
+    document.getElementById('amount').value = '';
+    document.getElementById('description').value = '';
+  }
+
+  showToast('Запись добавлена ✓');
+  renderHome();
+}
+
+function quickSupermarket() {
+  const amount = prompt('Сумма чека супермаркета (₽):');
+  if (!amount || isNaN(amount)) return;
+  const store = prompt('Название магазина (необязательно):') || '';
+  addTransaction({
+    type:        'expense',
+    category:    'Супермаркет / гипермаркет',
+    description: store,
+    amount:      parseFloat(amount),
+    date:        toDateInput(new Date()),
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// ГЛАВНАЯ
+// ═══════════════════════════════════════════════════════
+function renderHome() {
+  const now  = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthTx = transactions.filter(t => t.date && t.date.startsWith(month));
+
+  const income  = monthTx.filter(t => t.type === 'income') .reduce((s,t) => s + t.amount, 0);
+  const expense = monthTx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const balance = income - expense;
+
+  document.getElementById('incomeAmt').textContent  = fmtRub(income);
+  document.getElementById('expenseAmt').textContent = fmtRub(expense);
+  const ba = document.getElementById('balanceAmt');
+  ba.textContent = fmtRub(balance);
+  ba.style.color = balance < 0 ? '#FFB3B3' : '#fff';
+
+  const list = document.getElementById('recentList');
+  const recent = transactions.slice(0, 10);
+  if (!recent.length) {
+    list.innerHTML = '<div class="empty-state"><span class="emoji">📋</span>Пока нет записей</div>';
+    return;
+  }
+  list.innerHTML = recent.map(t => txHTML(t, true)).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// ИСТОРИЯ
+// ═══════════════════════════════════════════════════════
+function populateMonthFilter() {
+  const sel = document.getElementById('filterMonth');
+  const months = new Set(transactions.map(t => t.date ? t.date.slice(0,7) : ''));
+  const now = new Date();
+  const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  months.add(cur);
+
+  const sorted = [...months].filter(Boolean).sort().reverse();
+  sel.innerHTML = sorted.map(m => {
+    const [y, mo] = m.split('-');
+    const label = new Date(y, mo-1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+    return `<option value="${m}" ${m===cur?'selected':''}>${label}</option>`;
+  }).join('');
+}
+
+function renderHistory() {
+  populateMonthFilter();
+  const month    = document.getElementById('filterMonth')?.value || '';
+  const typeF    = document.getElementById('filterType')?.value  || '';
+  let filtered   = transactions;
+  if (month) filtered = filtered.filter(t => t.date && t.date.startsWith(month));
+  if (typeF) filtered = filtered.filter(t => t.type === typeF);
+
+  const list = document.getElementById('historyList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><span class="emoji">🔍</span>Нет записей за этот период</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(t => txHTML(t, true)).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// ЭЛЕМЕНТ ТРАНЗАКЦИИ
+// ═══════════════════════════════════════════════════════
+function txHTML(t, showDel) {
+  const icon    = CAT_ICONS[t.category] || (t.type === 'income' ? '💚' : '❌');
+  const isSup   = t.category === 'Супермаркет / гипермаркет';
+  const iconCls = isSup ? 'sup' : t.type === 'income' ? 'inc' : 'exp';
+  const amtCls  = t.type === 'income' ? 'inc' : 'exp';
+  const sign    = t.type === 'income' ? '+' : '−';
+  const desc    = t.description ? ` · ${t.description}` : '';
+
+  return `
+  <div class="tx-item" id="tx-${t.id}">
+    <div class="tx-icon ${iconCls}">${icon}</div>
+    <div class="tx-info">
+      <div class="tx-cat">${t.category}</div>
+      <div class="tx-meta">${fmtDate(t.date)}${desc}</div>
+    </div>
+    <div class="tx-amount ${amtCls}">${sign}${fmtRub(t.amount)}</div>
+    ${showDel ? `<button class="tx-del" onclick="deleteTx(${t.id})">✕</button>` : ''}
+  </div>`;
+}
+
+function deleteTx(id) {
+  if (!confirm('Удалить запись?')) return;
+  transactions = transactions.filter(t => t.id !== id);
+  saveData();
+  renderHome();
+  renderHistory();
+  renderStats();
+  showToast('Удалено');
+}
+
+// ═══════════════════════════════════════════════════════
+// АНАЛИТИКА
+// ═══════════════════════════════════════════════════════
+function renderStats() {
+  const now   = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const exp   = transactions.filter(t => t.type === 'expense' && t.date?.startsWith(month));
+  const inc   = transactions.filter(t => t.type === 'income'  && t.date?.startsWith(month));
+
+  const totalExp = exp.reduce((s,t) => s+t.amount, 0);
+  const totalInc = inc.reduce((s,t) => s+t.amount, 0);
+
+  const bycat = {};
+  exp.forEach(t => { bycat[t.category] = (bycat[t.category] || 0) + t.amount; });
+  const sorted = Object.entries(bycat).sort((a,b) => b[1]-a[1]);
+
+  const cards = document.getElementById('statCards');
+  if (!sorted.length) {
+    cards.innerHTML = '<div class="empty-state"><span class="emoji">📊</span>Нет данных за этот месяц</div>';
+    return;
+  }
+
+  const rows = sorted.map(([cat, amt]) => {
+    const pct  = totalExp > 0 ? (amt / totalExp * 100) : 0;
+    const icon = CAT_ICONS[cat] || '•';
+    return `
+    <div class="stat-row">
+      <span style="font-size:18px;width:26px">${icon}</span>
+      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cat}</span>
+      <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+      <span class="val">${fmtRub(amt)}</span>
+    </div>`;
+  }).join('');
+
+  cards.innerHTML = `
+    <div class="stat-card">
+      <h3>Расходы по категориям · ${now.toLocaleDateString('ru-RU',{month:'long'})}</h3>
+      ${rows}
+    </div>
+    <div class="stat-card">
+      <h3>Сводка месяца</h3>
+      <div class="stat-row">
+        <span>💚 Доходы</span>
+        <span class="val" style="color:var(--green)">${fmtRub(totalInc)}</span>
+      </div>
+      <div class="stat-row">
+        <span>🔴 Расходы</span>
+        <span class="val" style="color:var(--red)">${fmtRub(totalExp)}</span>
+      </div>
+      <div class="stat-row">
+        <span>💰 Остаток</span>
+        <span class="val" style="color:${totalInc-totalExp>=0?'var(--green)':'var(--red)'}">
+          ${fmtRub(totalInc - totalExp)}
+        </span>
+      </div>
+      ${totalInc > 0 ? `
+      <div class="stat-row">
+        <span>📊 Норма сбережений</span>
+        <span class="val">${Math.round((totalInc-totalExp)/totalInc*100)}%</span>
+      </div>` : ''}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// ЭКСПОРТ / ИМПОРТ
+// ═══════════════════════════════════════════════════════
+function exportCSV() {
+  if (!transactions.length) { showToast('Нет данных для экспорта'); return; }
+  const BOM  = '\uFEFF';
+  const head = 'Дата;Тип;Категория;Описание;Сумма\n';
+  const rows = transactions.map(t =>
+    `${fmtDate(t.date)};${t.type==='income'?'Доход':'Расход'};${t.category};${t.description||''};${t.amount}`
+  ).join('\n');
+  download(BOM + head + rows, 'бюджет.csv', 'text/csv;charset=utf-8');
+  showToast('CSV скачан');
+}
+
+function exportJSON() {
+  download(JSON.stringify(transactions, null, 2), 'budget-backup.json', 'application/json');
+  showToast('Резервная копия сохранена');
+}
+
+function importJSON() {
+  document.getElementById('importFile').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      transactions = data;
+      saveData();
+      renderAll();
+      showToast(`Импортировано ${data.length} записей`);
+    } catch {
+      showToast('Ошибка: неверный файл');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearData() {
+  if (!confirm('Удалить ВСЕ записи? Это действие нельзя отменить.')) return;
+  transactions = [];
+  saveData();
+  renderAll();
+  showToast('Все данные удалены');
+}
+
+function download(content, filename, mime) {
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// УВЕДОМЛЕНИЕ
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
