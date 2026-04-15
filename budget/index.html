@@ -538,8 +538,22 @@ function lsLoad() {
   } catch(e) { return []; }
 }
 
+const SEED_DATA = [
+  {"id":1776024193401,"type":"expense","category":"Аренда / ипотека","description":"","amount":50000,"date":"2026-04-12"},
+  {"id":1776024068418,"type":"expense","category":"Авто (топливо, парковка)","description":"","amount":38000,"date":"2026-04-12"},
+  {"id":1775931679454,"type":"income","category":"Подработка / фриланс","description":"","amount":546036,"date":"2026-04-11"},
+  {"id":1775931643910,"type":"income","category":"Зарплата (основная)","description":"","amount":160000,"date":"2026-04-11"}
+];
+
 function loadData() {
-  transactions = lsLoad();
+  const saved = lsLoad();
+  if (saved.length > 0) {
+    transactions = saved;
+  } else {
+    // Первый запуск — загружаем сохранённые данные
+    transactions = SEED_DATA;
+    lsSave();
+  }
   renderAll();
 }
 
