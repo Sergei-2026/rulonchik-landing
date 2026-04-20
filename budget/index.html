@@ -457,8 +457,8 @@
     <div class="sync-box">
       <h3>🔄 Синхронизация между устройствами</h3>
       <div class="sync-status" id="syncStatus"></div>
-      <input class="sync-input" id="syncKey"   type="password" placeholder="Master Key (X-Master-Key)">
-      <input class="sync-input" id="syncBin"   type="text"     placeholder="Bin ID">
+      <input class="sync-input" id="syncKey"   type="password" placeholder="GitHub Token (ghp_...)">
+      <input class="sync-input" id="syncBin"   type="text"     placeholder="Gist ID">
       <button class="btn-sync save" onclick="saveSyncConfig()">Сохранить настройки</button>
       <button class="btn-sync pull" onclick="syncPull(true)">⬇ Получить данные с облака</button>
       <button class="btn-sync push" onclick="syncPush(true)">⬆ Отправить данные в облако</button>
@@ -578,20 +578,20 @@ function lsLoad() {
 }
 
 // ═══════════════════════════════════════════════════════
-// СИНХРОНИЗАЦИЯ — JSONBin.io
+// СИНХРОНИЗАЦИЯ — GitHub Gist
 // ═══════════════════════════════════════════════════════
-const JSONBIN = 'https://api.jsonbin.io/v3';
+const GIST_FILE = 'budget.json';
 
 function getSyncCfg() {
   return {
-    key:   localStorage.getItem('sync_key') || '',
-    binId: localStorage.getItem('sync_bin') || ''
+    key:    localStorage.getItem('sync_key') || '',
+    gistId: localStorage.getItem('sync_bin') || ''
   };
 }
 
 function syncConfigured() {
-  const {key, binId} = getSyncCfg();
-  return key && binId;
+  const {key, gistId} = getSyncCfg();
+  return key && gistId;
 }
 
 function setSyncStatus(type, msg) {
@@ -602,11 +602,11 @@ function setSyncStatus(type, msg) {
 }
 
 function saveSyncConfig() {
-  const key   = document.getElementById('syncKey').value.trim();
-  const binId = document.getElementById('syncBin').value.trim();
-  if (!key || !binId) { setSyncStatus('err', 'Заполните оба поля'); return; }
+  const key    = document.getElementById('syncKey').value.trim();
+  const gistId = document.getElementById('syncBin').value.trim();
+  if (!key || !gistId) { setSyncStatus('err', 'Заполните оба поля'); return; }
   localStorage.setItem('sync_key', key);
-  localStorage.setItem('sync_bin', binId);
+  localStorage.setItem('sync_bin', gistId);
   setSyncStatus('ok', 'Настройки сохранены');
 }
 
@@ -615,16 +615,18 @@ async function syncPull(manual) {
     if (manual) setSyncStatus('err', 'Сначала сохраните настройки');
     return;
   }
-  const {key, binId} = getSyncCfg();
+  const {key, gistId} = getSyncCfg();
   try {
     if (manual) setSyncStatus('inf', 'Загрузка…');
-    const r = await fetch(`${JSONBIN}/b/${binId}/latest`, {
-      headers: {'X-Master-Key': key},
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `token ${key}`, 'Accept': 'application/vnd.github+json' },
       signal: AbortSignal.timeout(8000)
     });
     if (!r.ok) throw new Error(r.status);
     const json = await r.json();
-    const cloudData = json.record;
+    const content = json.files?.[GIST_FILE]?.content;
+    if (!content) throw new Error('no file');
+    const cloudData = JSON.parse(content);
     if (Array.isArray(cloudData) && cloudData.length > transactions.length) {
       transactions = cloudData;
       lsSave();
@@ -641,13 +643,13 @@ async function syncPush(manual) {
     if (manual) setSyncStatus('err', 'Сначала сохраните настройки');
     return;
   }
-  const {key, binId} = getSyncCfg();
+  const {key, gistId} = getSyncCfg();
   try {
     if (manual) setSyncStatus('inf', 'Отправка…');
-    const r = await fetch(`${JSONBIN}/b/${binId}`, {
-      method: 'PUT',
-      headers: {'X-Master-Key': key, 'Content-Type': 'application/json'},
-      body: JSON.stringify(transactions),
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `token ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files: { [GIST_FILE]: { content: JSON.stringify(transactions) } } }),
       signal: AbortSignal.timeout(8000)
     });
     if (!r.ok) throw new Error(r.status);
