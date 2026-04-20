@@ -601,6 +601,13 @@ function setSyncStatus(type, msg) {
   el.textContent = msg;
 }
 
+function saveSyncConfigSilent() {
+  const key    = document.getElementById('syncKey')?.value.trim();
+  const gistId = document.getElementById('syncBin')?.value.trim();
+  if (key)    localStorage.setItem('sync_key', key);
+  if (gistId) localStorage.setItem('sync_bin', gistId);
+}
+
 function saveSyncConfig() {
   const key    = document.getElementById('syncKey').value.trim();
   const gistId = document.getElementById('syncBin').value.trim();
@@ -611,8 +618,9 @@ function saveSyncConfig() {
 }
 
 async function syncPull(manual) {
+  if (manual) saveSyncConfigSilent();
   if (!syncConfigured()) {
-    if (manual) setSyncStatus('err', 'Сначала сохраните настройки');
+    if (manual) setSyncStatus('err', 'Введите токен и Gist ID');
     return;
   }
   const {key, gistId} = getSyncCfg();
@@ -639,8 +647,9 @@ async function syncPull(manual) {
 }
 
 async function syncPush(manual) {
+  if (manual) saveSyncConfigSilent();
   if (!syncConfigured()) {
-    if (manual) setSyncStatus('err', 'Сначала сохраните настройки');
+    if (manual) setSyncStatus('err', 'Введите токен и Gist ID');
     return;
   }
   const {key, gistId} = getSyncCfg();
