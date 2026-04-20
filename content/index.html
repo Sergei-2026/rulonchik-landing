@@ -9,248 +9,54 @@
   <title>Генератор постов</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
     :root {
-      --purple:  #6B3FA0;
-      --purple2: #8B5CC8;
-      --purple3: #F3EEFF;
-      --green:   #2E7D32;
-      --green2:  #E8F5E9;
-      --red:     #C62828;
-      --red2:    #FFEBEE;
-      --gray:    #F5F5F5;
-      --border:  #DDD;
-      --text:    #222;
-      --muted:   #888;
-      --radius:  12px;
+      --purple:  #6B3FA0; --purple2: #8B5CC8; --purple3: #F3EEFF;
+      --green:   #2E7D32; --green2:  #E8F5E9;
+      --red:     #C62828; --red2:    #FFEBEE;
+      --gray: #F5F5F5; --border: #DDD; --text: #222; --muted: #888; --radius: 12px;
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--gray);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: 30px;
+    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--gray); color:var(--text); min-height:100vh; padding-bottom:30px; }
+    header { background:var(--purple); color:#fff; padding:16px 20px 14px; position:sticky; top:0; z-index:100; }
+    header h1 { font-size:18px; font-weight:700; }
+    header p  { font-size:12px; opacity:.75; margin-top:3px; }
+    .container { padding:16px; max-width:600px; margin:0 auto; }
+    .card { background:#fff; border-radius:var(--radius); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:14px; }
+    .card-title { font-size:13px; font-weight:700; color:var(--purple); text-transform:uppercase; letter-spacing:.4px; margin-bottom:12px; }
+    .form-row { margin-bottom:12px; }
+    .form-row label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+    .form-row input, .form-row select, .form-row textarea {
+      width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:8px;
+      font-size:15px; background:#fff; color:var(--text); -webkit-appearance:none; font-family:inherit;
     }
-
-    header {
-      background: var(--purple);
-      color: #fff;
-      padding: 16px 20px 14px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    header h1 { font-size: 18px; font-weight: 700; }
-    header p  { font-size: 12px; opacity: .75; margin-top: 3px; }
-
-    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
-
-    /* ── Карточка ── */
-    .card {
-      background: #fff;
-      border-radius: var(--radius);
-      padding: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-      margin-bottom: 14px;
-    }
-    .card-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--purple);
-      text-transform: uppercase;
-      letter-spacing: .4px;
-      margin-bottom: 12px;
-    }
-
-    /* ── Форма ── */
-    .form-row { margin-bottom: 12px; }
-    .form-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-    .form-row input,
-    .form-row select,
-    .form-row textarea {
-      width: 100%;
-      padding: 11px 13px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 15px;
-      background: #fff;
-      color: var(--text);
-      -webkit-appearance: none;
-      font-family: inherit;
-    }
-    .form-row textarea { resize: vertical; min-height: 80px; }
-    .form-row input:focus,
-    .form-row select:focus,
-    .form-row textarea:focus { outline: none; border-color: var(--purple2); }
-
-    /* ── Соцсети ── */
-    .networks { display: flex; gap: 8px; flex-wrap: wrap; }
-    .net-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 14px;
-      border: 2px solid var(--border);
-      border-radius: 20px;
-      background: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .15s;
-      color: var(--muted);
-    }
-    .net-btn.active { border-color: var(--purple2); background: var(--purple3); color: var(--purple); }
-    .net-btn .net-icon { font-size: 18px; }
-
-    /* ── Тон ── */
-    .tone-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .tone-btn {
-      flex: 1; min-width: 80px;
-      padding: 9px 8px;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      background: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      text-align: center;
-      color: var(--muted);
-      transition: all .15s;
-    }
-    .tone-btn.active { border-color: var(--purple2); background: var(--purple3); color: var(--purple); }
-
-    /* ── Кнопка генерации ── */
-    .btn-generate {
-      width: 100%;
-      padding: 15px;
-      background: var(--purple2);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background .15s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-generate:active { background: var(--purple); }
-    .btn-generate:disabled { opacity: .5; cursor: default; }
-
-    /* ── Спиннер ── */
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2.5px solid rgba(255,255,255,.4);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      display: none;
-    }
-    .btn-generate.loading .spinner { display: block; }
-    .btn-generate.loading .btn-label { display: none; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Результат ── */
-    .result-block {
-      margin-bottom: 12px;
-    }
-    .result-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-    .result-net {
-      font-size: 13px; font-weight: 700;
-      color: var(--purple);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .btn-copy {
-      padding: 5px 12px;
-      background: var(--purple3);
-      border: 1.5px solid var(--purple2);
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--purple);
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .btn-copy.copied { background: var(--green2); border-color: var(--green); color: var(--green); }
-    .result-text {
-      background: var(--gray);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-size: 14px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    /* ── Ошибка ── */
-    .error-box {
-      background: var(--red2);
-      border: 1.5px solid var(--red);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-size: 14px;
-      color: var(--red);
-      display: none;
-      margin-bottom: 14px;
-    }
-
-    /* ── API ключ ── */
-    .api-row { display: flex; gap: 8px; }
-    .api-row input { flex: 1; }
-    .btn-save-key {
-      padding: 11px 16px;
-      background: var(--purple2);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .key-status {
-      font-size: 12px;
-      margin-top: 6px;
-      height: 16px;
-    }
-    .key-status.ok  { color: var(--green); }
-    .key-status.err { color: var(--red); }
-
-    .hint {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 6px;
-      line-height: 1.5;
-    }
+    .form-row textarea { resize:vertical; min-height:80px; }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus { outline:none; border-color:var(--purple2); }
+    .networks { display:flex; gap:8px; flex-wrap:wrap; }
+    .net-btn { display:flex; align-items:center; gap:6px; padding:8px 14px; border:2px solid var(--border); border-radius:20px; background:#fff; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; color:var(--muted); }
+    .net-btn.active { border-color:var(--purple2); background:var(--purple3); color:var(--purple); }
+    .net-btn .ni { font-size:18px; }
+    .tone-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .tone-btn { flex:1; min-width:80px; padding:9px 8px; border:2px solid var(--border); border-radius:8px; background:#fff; font-size:13px; font-weight:600; cursor:pointer; text-align:center; color:var(--muted); transition:all .15s; }
+    .tone-btn.active { border-color:var(--purple2); background:var(--purple3); color:var(--purple); }
+    .btn-generate { width:100%; padding:15px; background:var(--purple2); color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; transition:background .15s; }
+    .btn-generate:active { background:var(--purple); }
+    .result-block { margin-bottom:12px; }
+    .result-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .result-net { font-size:13px; font-weight:700; color:var(--purple); display:flex; align-items:center; gap:6px; }
+    .btn-copy { padding:5px 12px; background:var(--purple3); border:1.5px solid var(--purple2); border-radius:6px; font-size:12px; font-weight:600; color:var(--purple); cursor:pointer; }
+    .btn-copy.copied { background:var(--green2); border-color:var(--green); color:var(--green); }
+    .result-text { background:var(--gray); border-radius:8px; padding:12px 14px; font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; }
+    .err { background:var(--red2); border:1.5px solid var(--red); border-radius:8px; padding:12px; font-size:14px; color:var(--red); display:none; margin-bottom:14px; }
   </style>
 </head>
 <body>
-
 <header>
   <h1>✍️ Генератор постов</h1>
   <p>Магазин тканей · контент для соцсетей</p>
 </header>
-
 <div class="container">
 
-  <!-- ── API ключ ── -->
-  <div class="card" id="apiCard">
-    <div class="card-title">🔑 API Ключ (один раз)</div>
-    <div class="api-row">
-      <input type="password" id="apiKey" placeholder="sk-ant-...">
-      <button class="btn-save-key" onclick="saveApiKey()">Сохранить</button>
-    </div>
-    <div class="key-status" id="keyStatus"></div>
-    <p class="hint">Получи бесплатный ключ на <b>console.groq.com</b> → API Keys → Create API Key.<br>Бесплатно, карта не нужна, работает в России. Ключ хранится только в твоём браузере.</p>
-  </div>
-
-  <!-- ── Форма ── -->
   <div class="card">
     <div class="card-title">📋 О чём пост</div>
-
     <div class="form-row">
       <label>Тип публикации</label>
       <select id="postType">
@@ -259,37 +65,31 @@
         <option value="arrival">📦 Поступление товара</option>
         <option value="tip">🧵 Совет по пошиву</option>
         <option value="season">🌸 Сезонная коллекция</option>
-        <option value="custom">✏️ Произвольный</option>
       </select>
     </div>
-
     <div class="form-row">
       <label>Название ткани / товара</label>
       <input type="text" id="product" placeholder="Лён натуральный, хлопок-стрейч…">
     </div>
-
     <div class="form-row">
       <label>Цена (необязательно)</label>
       <input type="text" id="price" placeholder="450 ₽/м, скидка 20%…">
     </div>
-
     <div class="form-row">
       <label>Детали (состав, цвета, особенности)</label>
-      <textarea id="details" placeholder="100% лён, 12 цветов, ширина 150 см, мягкая фактура…"></textarea>
+      <textarea id="details" placeholder="100% лён, 12 цветов, ширина 150 см…"></textarea>
     </div>
   </div>
 
-  <!-- ── Соцсети ── -->
   <div class="card">
     <div class="card-title">📱 Соцсети</div>
     <div class="networks">
-      <button class="net-btn active" data-net="vk"        onclick="toggleNet(this)"><span class="net-icon">💙</span>ВКонтакте</button>
-      <button class="net-btn active" data-net="telegram"  onclick="toggleNet(this)"><span class="net-icon">✈️</span>Telegram</button>
-      <button class="net-btn active" data-net="instagram" onclick="toggleNet(this)"><span class="net-icon">📸</span>Instagram</button>
+      <button class="net-btn active" data-net="vk"        onclick="toggleNet(this)"><span class="ni">💙</span>ВКонтакте</button>
+      <button class="net-btn active" data-net="telegram"  onclick="toggleNet(this)"><span class="ni">✈️</span>Telegram</button>
+      <button class="net-btn active" data-net="instagram" onclick="toggleNet(this)"><span class="ni">📸</span>Instagram</button>
     </div>
   </div>
 
-  <!-- ── Тон ── -->
   <div class="card">
     <div class="card-title">🎨 Тон текста</div>
     <div class="tone-row">
@@ -299,186 +99,213 @@
     </div>
   </div>
 
-  <!-- ── Ошибка ── -->
-  <div class="error-box" id="errorBox"></div>
-
-  <!-- ── Кнопка ── -->
-  <button class="btn-generate" id="generateBtn" onclick="generate()">
-    <div class="spinner"></div>
-    <span class="btn-label">✨ Сгенерировать посты</span>
-  </button>
-
-  <!-- ── Результаты ── -->
+  <div class="err" id="errBox"></div>
+  <button class="btn-generate" onclick="generate()">✨ Сгенерировать посты</button>
   <div id="results" style="margin-top:16px;"></div>
-
 </div>
 
 <script>
-// ── Состояние ──────────────────────────────────────────
-let selectedTone = 'friendly';
+let tone = 'friendly';
 
-const NET_LABELS = {
-  vk:        '💙 ВКонтакте',
-  telegram:  '✈️ Telegram',
-  instagram: '📸 Instagram',
+// ── Шаблоны ─────────────────────────────────────────────────────────────
+
+const OPENS = {
+  friendly: [
+    "Привет, дорогие! 🤍", "Друзья, у нас кое-что новенькое! ✨", "Спешим поделиться с вами! 🌸",
+    "Хорошие новости для всех рукодельниц! 💕", "Девочки, смотрите что у нас! 🎉",
+  ],
+  professional: [
+    "Представляем новинку нашего ассортимента.", "Информируем об обновлении коллекции.",
+    "Рады сообщить о поступлении:", "Обновление ассортимента магазина.",
+  ],
+  selling: [
+    "🔥 Только посмотрите на это!", "⚡ Не пропустите!", "💥 Горячая новинка уже в продаже!",
+    "🚀 Это именно то, что вы искали!", "✅ Наконец-то в наличии — разберут быстро!",
+  ],
 };
 
-const TONE_LABELS = {
-  friendly:     'дружелюбный, тёплый, как подруга рекомендует',
-  professional: 'деловой, сдержанный, профессиональный',
-  selling:      'яркий, продающий, с призывом к действию',
+const BODIES = {
+  new: {
+    friendly: [
+      "В нашем магазине появилась {p} — и мы уже влюбились в неё! {d} Ткань просто создана для уютных изделий.",
+      "Знакомьтесь — {p}! {d} Идеальный выбор для тех, кто ценит качество и красоту.",
+      "Пополнение ассортимента! {p} — это {d} Уже ждёт вас в магазине.",
+    ],
+    professional: [
+      "В ассортимент магазина добавлена {p}. {d} Материал доступен для заказа.",
+      "Новая позиция: {p}. {d} Рекомендуем для пошива качественных изделий.",
+    ],
+    selling: [
+      "Новинка, которую ждали! {p} — {d} Запасы ограничены, успейте выбрать!",
+      "{p} — хит этого сезона! {d} Берите сразу несколько цветов, пока есть!",
+    ],
+  },
+  sale: {
+    friendly: [
+      "Радуем вас приятной новостью — на {p} действует специальная цена! {d} Отличный момент обновить запасы 🎁",
+      "Для наших любимых покупателей — скидка на {p}! {d} Успейте воспользоваться предложением 💕",
+    ],
+    professional: [
+      "На {p} установлена специальная цена. {d} Предложение действует ограниченное время.",
+      "Акционное предложение: {p}. {d} Уточняйте актуальные условия в магазине.",
+    ],
+    selling: [
+      "🔥 АКЦИЯ! {p} по выгодной цене! {d} Только сейчас — не упустите шанс!",
+      "⚡ Скидка на {p}! {d} Это предложение ненадолго — действуй быстрее!",
+    ],
+  },
+  arrival: {
+    friendly: [
+      "Новое поступление уже в магазине! {p} снова в наличии. {d} Так рады, что успели взять для вас 🌸",
+      "Ждали? Дождались! {p} поступила к нам. {d} Приходите выбирать!",
+    ],
+    professional: [
+      "Поступление товара: {p}. {d} Доступно для приобретения.",
+      "Получено новое поступление {p}. {d} Актуальный ассортимент — в магазине.",
+    ],
+    selling: [
+      "📦 ПОСТУПЛЕНИЕ! {p} снова в наличии! {d} Разлетается быстро — успейте забрать!",
+      "⚡ Ждали — вот! {p} приехала! {d} Первым — лучший выбор!",
+    ],
+  },
+  tip: {
+    friendly: [
+      "Делимся маленьким секретом 🧵 Если вы работаете с {p}, {d} Попробуйте — и результат вас порадует!",
+      "Совет от нашего мастера: {p} — {d} Сохраняйте, чтобы не забыть! 📌",
+    ],
+    professional: [
+      "Рекомендации по работе с {p}: {d} Соблюдение этих правил обеспечит качественный результат.",
+      "Технический совет: {p}. {d} Это поможет сохранить внешний вид изделия.",
+    ],
+    selling: [
+      "💡 ЛАЙФХАК с {p}! {d} Применяйте — и ваши изделия будут на высшем уровне!",
+      "🧵 Профи-совет по {p}: {d} Сохраняйте и делитесь с подругами!",
+    ],
+  },
+  season: {
+    friendly: [
+      "Сезон в самом разгаре, и мы подготовили для вас {p}! {d} Создавайте модные образы с удовольствием 🌸",
+      "Встречаем сезон вместе! {p} — {d} Вдохновение и ткани — у нас 💕",
+    ],
+    professional: [
+      "Сезонная коллекция пополнена: {p}. {d} Актуальные материалы для текущего сезона.",
+    ],
+    selling: [
+      "🌸 СЕЗОННАЯ КОЛЛЕКЦИЯ! {p} — {d} Успейте выбрать лучшее до конца сезона!",
+      "✅ Сезон открыт! {p} — {d} Шейте стильно прямо сейчас!",
+    ],
+  },
 };
 
-const TYPE_LABELS = {
-  new:      'новинка в ассортименте',
-  sale:     'акция или скидка',
-  arrival:  'новое поступление товара',
-  tip:      'полезный совет по пошиву',
-  season:   'сезонная коллекция',
-  custom:   'публикация',
+const CLOSES = {
+  friendly: [
+    "Ждём вас в магазине! 💕", "Заходите, будем рады 🌸", "Приходите за вдохновением и тканями! ✨",
+    "Всегда рады помочь с выбором 🤍", "До встречи в магазине! 👋",
+  ],
+  professional: [
+    "Приглашаем посетить магазин.", "Обращайтесь, поможем с выбором.",
+    "Ждём вас в нашем магазине.", "За подробностями — к нам в магазин.",
+  ],
+  selling: [
+    "Пишите, звоните — поможем! 🔥", "Ждём вас — пока есть в наличии! ⚡",
+    "Не откладывайте — приходите сегодня! 💥", "Успейте! Количество ограничено 🚀",
+  ],
 };
 
-const NET_INSTRUCTIONS = {
-  vk: `ВКонтакте: 3–5 абзацев, живой текст, 5–7 хештегов в конце через пробел. Можно использовать эмодзи умеренно.`,
-  telegram: `Telegram: короткий и ёмкий текст (2–3 абзаца), эмодзи органично по тексту, никаких хештегов.`,
-  instagram: `Instagram: эмоциональный текст (2–3 абзаца), много эмодзи, 15–20 хештегов в конце отдельным блоком.`,
+const HASHTAGS = {
+  vk: {
+    base: "#ткани #магазинтканей #шитьё #рукоделие #пошив",
+    new:      "#новинка #новыеткани",
+    sale:     "#акция #скидки #выгоднаяцена",
+    arrival:  "#поступление #естьвналичии",
+    tip:      "#советыпошитью #лайфхак #шитьёдляначинающих",
+    season:   "#сезоннаяколлекция #мода",
+  },
+  instagram: {
+    base: "#ткани #магазинтканей #шитьё #рукоделие #пошив #fabric #sewing #handmade #мода #стиль #ткань #шью #рукодельница #шитьёэтолюбовь #своимируками",
+    new:      "#новинка #новыеткани #newcollection",
+    sale:     "#акция #скидки #распродажа #выгода #sale",
+    arrival:  "#поступление #новоепоступление #естьвналичии",
+    tip:      "#советыпошитью #лайфхак #шитьёдляначинающих #мастеркласс",
+    season:   "#сезоннаяколлекция #весна #лето #мода #тренды",
+  },
 };
 
-// ── API ключ ───────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('anthropic_key');
-  if (saved) {
-    document.getElementById('apiKey').value = saved;
-    document.getElementById('keyStatus').textContent = 'Ключ сохранён ✓';
-    document.getElementById('keyStatus').className = 'key-status ok';
-  }
-});
+// ── Вспомогательные функции ─────────────────────────────────────────────
 
-function saveApiKey() {
-  const key = document.getElementById('apiKey').value.trim();
-  if (!key) {
-    document.getElementById('keyStatus').textContent = 'Вставь ключ из Google AI Studio';
-    document.getElementById('keyStatus').className = 'key-status err';
-    return;
-  }
-  localStorage.setItem('anthropic_key', key);
-  document.getElementById('keyStatus').textContent = 'Ключ сохранён ✓';
-  document.getElementById('keyStatus').className = 'key-status ok';
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function buildDetails(product, price, details) {
+  let parts = [];
+  if (details) parts.push(details.trim());
+  if (price)   parts.push(`Цена: ${price.trim()}.`);
+  return parts.join(' ');
 }
 
-// ── Соцсети ───────────────────────────────────────────
-function toggleNet(btn) {
-  btn.classList.toggle('active');
+function fillTemplate(tpl, product, detailStr) {
+  return tpl
+    .replace(/{p}/g, product)
+    .replace(/{d}/g, detailStr ? detailStr + '.' : '');
 }
 
-function getSelectedNets() {
-  return [...document.querySelectorAll('.net-btn.active')].map(b => b.dataset.net);
+// ── Генераторы по соцсети ───────────────────────────────────────────────
+
+function genVK(type, product, price, details, tone) {
+  const d    = buildDetails(product, price, details);
+  const open = pick(OPENS[tone]);
+  const body = fillTemplate(pick(BODIES[type][tone] || BODIES[type]['friendly']), product, d);
+  const close = pick(CLOSES[tone]);
+  const tags  = (HASHTAGS.vk.base + ' ' + (HASHTAGS.vk[type] || '')).trim();
+  return `${open}\n\n${body}\n\n${close}\n\n${tags}`;
 }
 
-// ── Тон ───────────────────────────────────────────────
+function genTelegram(type, product, price, details, tone) {
+  const d    = buildDetails(product, price, details);
+  const open = pick(OPENS[tone]);
+  const body = fillTemplate(pick(BODIES[type][tone] || BODIES[type]['friendly']), product, d);
+  const close = pick(CLOSES[tone]);
+  return `${open}\n\n${body}\n\n${close}`;
+}
+
+function genInstagram(type, product, price, details, tone) {
+  const d    = buildDetails(product, price, details);
+  const open = pick(OPENS[tone]);
+  const body = fillTemplate(pick(BODIES[type][tone] || BODIES[type]['friendly']), product, d);
+  const close = pick(CLOSES[tone]);
+  const tags  = (HASHTAGS.instagram.base + ' ' + (HASHTAGS.instagram[type] || '')).trim();
+  return `${open}\n\n${body}\n\n${close}\n\n.\n.\n.\n${tags}`;
+}
+
+const GENERATORS = { vk: genVK, telegram: genTelegram, instagram: genInstagram };
+const NET_LABELS  = { vk: '💙 ВКонтакте', telegram: '✈️ Telegram', instagram: '📸 Instagram' };
+
+// ── UI ──────────────────────────────────────────────────────────────────
+
+function toggleNet(btn) { btn.classList.toggle('active'); }
+
 function setTone(btn) {
   document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  selectedTone = btn.dataset.tone;
+  tone = btn.dataset.tone;
 }
 
-// ── Генерация ─────────────────────────────────────────
-async function generate() {
-  const apiKey  = localStorage.getItem('anthropic_key') || '';
+function generate() {
   const product = document.getElementById('product').value.trim();
   const price   = document.getElementById('price').value.trim();
   const details = document.getElementById('details').value.trim();
   const type    = document.getElementById('postType').value;
-  const nets    = getSelectedNets();
+  const nets    = [...document.querySelectorAll('.net-btn.active')].map(b => b.dataset.net);
+  const err     = document.getElementById('errBox');
 
-  // Валидация
-  const errBox = document.getElementById('errorBox');
-  errBox.style.display = 'none';
+  err.style.display = 'none';
+  if (!product) { err.textContent = 'Введи название ткани или товара'; err.style.display = 'block'; return; }
+  if (!nets.length) { err.textContent = 'Выбери хотя бы одну соцсеть'; err.style.display = 'block'; return; }
 
-  if (!apiKey) {
-    showError('Введи API ключ в блоке выше и нажми Сохранить');
-    return;
-  }
-  if (!product) {
-    showError('Введи название ткани или товара');
-    return;
-  }
-  if (!nets.length) {
-    showError('Выбери хотя бы одну соцсеть');
-    return;
-  }
-
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  btn.classList.add('loading');
-  document.getElementById('results').innerHTML = '';
-
-  // Строим промпт
-  const netInstructions = nets.map(n => `• ${NET_INSTRUCTIONS[n]}`).join('\n');
-  const priceStr  = price   ? `\nЦена: ${price}` : '';
-  const detailStr = details ? `\nДетали: ${details}` : '';
-
-  const prompt = `Ты — SMM-специалист магазина тканей. Напиши посты для соцсетей.
-
-Тип публикации: ${TYPE_LABELS[type]}
-Товар: ${product}${priceStr}${detailStr}
-Тон: ${TONE_LABELS[selectedTone]}
-
-Напиши отдельный пост для каждой соцсети:
-${netInstructions}
-
-Формат ответа — строго так, без лишних слов вокруг:
-${nets.map(n => `[${n.toUpperCase()}]\n(текст поста)`).join('\n\n')}
-
-Пиши по-русски. Текст должен быть готов к публикации.`;
-
-  try {
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 2000,
-        temperature: 0.8,
-      }),
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `Ошибка ${resp.status}`);
-    }
-
-    const data = await resp.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    renderResults(text, nets);
-
-  } catch (e) {
-    showError(e.message || 'Не удалось подключиться к API');
-  } finally {
-    btn.disabled = false;
-    btn.classList.remove('loading');
-  }
-}
-
-// ── Парсинг ответа ─────────────────────────────────────
-function renderResults(text, nets) {
   const container = document.getElementById('results');
   container.innerHTML = '';
 
-  // Разбиваем по маркерам [VK], [TELEGRAM], [INSTAGRAM]
-  const parts = {};
-  const regex = /\[([A-Z]+)\]\s*([\s\S]*?)(?=\[[A-Z]+\]|$)/g;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    parts[match[1].toLowerCase()] = match[2].trim();
-  }
-
   nets.forEach(net => {
-    const postText = parts[net] || text.trim();
+    const text  = GENERATORS[net](type, product, price, details, tone);
     const block = document.createElement('div');
     block.className = 'card result-block';
     block.innerHTML = `
@@ -486,8 +313,7 @@ function renderResults(text, nets) {
         <div class="result-net">${NET_LABELS[net]}</div>
         <button class="btn-copy" onclick="copyPost(this)">Копировать</button>
       </div>
-      <div class="result-text">${escHtml(postText)}</div>
-    `;
+      <div class="result-text">${escHtml(text)}</div>`;
     container.appendChild(block);
   });
 
@@ -499,18 +325,8 @@ function copyPost(btn) {
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = 'Скопировано ✓';
     btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = 'Копировать';
-      btn.classList.remove('copied');
-    }, 2000);
+    setTimeout(() => { btn.textContent = 'Копировать'; btn.classList.remove('copied'); }, 2000);
   });
-}
-
-function showError(msg) {
-  const el = document.getElementById('errorBox');
-  el.textContent = msg;
-  el.style.display = 'block';
-  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function escHtml(s) {
