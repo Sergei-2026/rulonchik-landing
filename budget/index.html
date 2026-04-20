@@ -290,6 +290,34 @@
     .btn-export.json { background: var(--yellow);  color: #7A6000; }
     .btn-export.clr  { background: var(--red2);   color: var(--red); }
 
+    /* ── Синхронизация ── */
+    .sync-box {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      margin-top: 12px;
+    }
+    .sync-box h3 { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 10px; }
+    .sync-status {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: none;
+    }
+    .sync-status.ok  { background: var(--green2); color: var(--green); display: block; }
+    .sync-status.err { background: var(--red2);   color: var(--red);   display: block; }
+    .sync-status.inf { background: var(--yellow); color: #7A6000;      display: block; }
+    .sync-input { width:100%; padding:10px 12px; border:1.5px solid var(--border);
+                  border-radius:8px; font-size:14px; margin-bottom:8px; }
+    .sync-input:focus { outline:none; border-color:var(--blue2); }
+    .btn-sync { width:100%; padding:11px; border:none; border-radius:8px;
+                font-size:14px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+    .btn-sync.save  { background:var(--blue2); color:#fff; }
+    .btn-sync.pull  { background:var(--green2); color:var(--green); }
+    .btn-sync.push  { background:var(--yellow); color:#7A6000; }
+
     .toast {
       position: fixed;
       bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -425,6 +453,17 @@
       <hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">
       <button class="btn-export clr" onclick="clearData()">🗑 Очистить все данные</button>
     </div>
+
+    <div class="sync-box">
+      <h3>🔄 Синхронизация между устройствами</h3>
+      <div class="sync-status" id="syncStatus"></div>
+      <input class="sync-input" id="syncKey"   type="password" placeholder="Master Key (X-Master-Key)">
+      <input class="sync-input" id="syncBin"   type="text"     placeholder="Bin ID">
+      <button class="btn-sync save" onclick="saveSyncConfig()">Сохранить настройки</button>
+      <button class="btn-sync pull" onclick="syncPull(true)">⬇ Получить данные с облака</button>
+      <button class="btn-sync push" onclick="syncPush(true)">⬆ Отправить данные в облако</button>
+    </div>
+
     <section style="margin-top:0;">
       <div class="section-title" style="margin-top:16px;">Всего записей: <span id="totalCount">0</span></div>
     </section>
@@ -538,6 +577,96 @@ function lsLoad() {
   } catch(e) { return []; }
 }
 
+// ═══════════════════════════════════════════════════════
+// СИНХРОНИЗАЦИЯ — JSONBin.io
+// ═══════════════════════════════════════════════════════
+const JSONBIN = 'https://api.jsonbin.io/v3';
+
+function getSyncCfg() {
+  return {
+    key:   localStorage.getItem('sync_key') || '',
+    binId: localStorage.getItem('sync_bin') || ''
+  };
+}
+
+function syncConfigured() {
+  const {key, binId} = getSyncCfg();
+  return key && binId;
+}
+
+function setSyncStatus(type, msg) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.className = 'sync-status ' + type;
+  el.textContent = msg;
+}
+
+function saveSyncConfig() {
+  const key   = document.getElementById('syncKey').value.trim();
+  const binId = document.getElementById('syncBin').value.trim();
+  if (!key || !binId) { setSyncStatus('err', 'Заполните оба поля'); return; }
+  localStorage.setItem('sync_key', key);
+  localStorage.setItem('sync_bin', binId);
+  setSyncStatus('ok', 'Настройки сохранены');
+}
+
+async function syncPull(manual) {
+  if (!syncConfigured()) {
+    if (manual) setSyncStatus('err', 'Сначала сохраните настройки');
+    return;
+  }
+  const {key, binId} = getSyncCfg();
+  try {
+    if (manual) setSyncStatus('inf', 'Загрузка…');
+    const r = await fetch(`${JSONBIN}/b/${binId}/latest`, {
+      headers: {'X-Master-Key': key},
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!r.ok) throw new Error(r.status);
+    const json = await r.json();
+    const cloudData = json.record;
+    if (Array.isArray(cloudData) && cloudData.length > transactions.length) {
+      transactions = cloudData;
+      lsSave();
+      renderAll();
+    }
+    if (manual) setSyncStatus('ok', `Синхронизировано, записей: ${transactions.length}`);
+  } catch(e) {
+    if (manual) setSyncStatus('err', 'Ошибка подключения к облаку');
+  }
+}
+
+async function syncPush(manual) {
+  if (!syncConfigured()) {
+    if (manual) setSyncStatus('err', 'Сначала сохраните настройки');
+    return;
+  }
+  const {key, binId} = getSyncCfg();
+  try {
+    if (manual) setSyncStatus('inf', 'Отправка…');
+    const r = await fetch(`${JSONBIN}/b/${binId}`, {
+      method: 'PUT',
+      headers: {'X-Master-Key': key, 'Content-Type': 'application/json'},
+      body: JSON.stringify(transactions),
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (manual) setSyncStatus('ok', `Отправлено, записей: ${transactions.length}`);
+  } catch(e) {
+    if (manual) setSyncStatus('err', 'Ошибка отправки в облако');
+  }
+}
+
+// Заполнить поля если уже настроено
+function fillSyncInputs() {
+  const {key, binId} = getSyncCfg();
+  const kEl = document.getElementById('syncKey');
+  const bEl = document.getElementById('syncBin');
+  if (kEl && key)   kEl.value = key;
+  if (bEl && binId) bEl.value = binId;
+  if (key && binId) setSyncStatus('ok', 'Синхронизация настроена');
+}
+
 const SEED_DATA = [
   {"id":1776024193401,"type":"expense","category":"Аренда / ипотека","description":"","amount":50000,"date":"2026-04-12"},
   {"id":1776024068418,"type":"expense","category":"Авто (топливо, парковка)","description":"","amount":38000,"date":"2026-04-12"},
@@ -545,20 +674,23 @@ const SEED_DATA = [
   {"id":1775931643910,"type":"income","category":"Зарплата (основная)","description":"","amount":160000,"date":"2026-04-11"}
 ];
 
-function loadData() {
+async function loadData() {
   const saved = lsLoad();
   if (saved.length > 0) {
     transactions = saved;
   } else {
-    // Первый запуск — загружаем сохранённые данные
     transactions = SEED_DATA;
     lsSave();
   }
   renderAll();
+  // Тихо подтянуть данные из облака если настроено
+  await syncPull(false);
 }
 
 function saveData() {
   lsSave();
+  // Тихо отправить в облако если настроено
+  syncPush(false);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -571,6 +703,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('txDate').value = toDateInput(now);
 
   setType('expense');
+  fillSyncInputs();
   loadData();
 });
 
