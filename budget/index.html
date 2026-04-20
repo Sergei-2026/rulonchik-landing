@@ -45,6 +45,17 @@
     }
     header h1 { font-size: 18px; font-weight: 700; }
     header .month { font-size: 13px; opacity: .75; margin-top: 2px; }
+    .undo-btn {
+      position: absolute; top: 14px; right: 16px;
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.35);
+      color: #fff; border-radius: 8px;
+      padding: 5px 12px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background .15s;
+    }
+    .undo-btn:active { background: rgba(255,255,255,.3); }
+    .undo-btn:disabled { opacity: .3; cursor: default; }
+    header { position: relative; }
 
     /* ── Баланс карточка ── */
     .balance-card {
@@ -347,6 +358,7 @@
 <header>
   <h1>💰 Личный бюджет</h1>
   <div class="month" id="headerMonth"></div>
+  <button class="undo-btn" id="undoBtn" onclick="undo()" disabled>↩ Отменить</button>
 </header>
 
 <!-- ── СТРАНИЦА: ГЛАВНАЯ ── -->
@@ -563,6 +575,24 @@ const CAT_ICONS = {
 // ═══════════════════════════════════════════════════════
 let currentType  = 'expense';
 let transactions = [];
+let undoStack    = [];
+
+function saveUndo() {
+  undoStack.push(JSON.stringify(transactions));
+  if (undoStack.length > 20) undoStack.shift();
+  const btn = document.getElementById('undoBtn');
+  if (btn) btn.disabled = false;
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  transactions = JSON.parse(undoStack.pop());
+  saveData();
+  renderAll();
+  showToast('Действие отменено');
+  const btn = document.getElementById('undoBtn');
+  if (btn) btn.disabled = undoStack.length === 0;
+}
 
 const LS_KEY = 'budget_tx';
 
@@ -793,6 +823,7 @@ function addTransaction(overrides) {
     date:        overrides?.date        ?? document.getElementById('txDate').value,
   };
 
+  saveUndo();
   transactions.unshift(tx);
   saveData();
 
@@ -904,6 +935,7 @@ function txHTML(t, showDel) {
 
 function deleteTx(id) {
   if (!confirm('Удалить запись?')) return;
+  saveUndo();
   transactions = transactions.filter(t => t.id !== id);
   saveData();
   renderHome();
@@ -1019,7 +1051,8 @@ function handleImport(e) {
 }
 
 function clearData() {
-  if (!confirm('Удалить ВСЕ записи? Это действие нельзя отменить.')) return;
+  if (!confirm('Удалить ВСЕ записи?')) return;
+  saveUndo();
   transactions = [];
   saveData();
   renderAll();
