@@ -664,15 +664,23 @@ async function syncPull(manual) {
     });
     if (!r.ok) throw new Error(r.status);
     const json = await r.json();
+
+    // Сравниваем время обновления Gist с последней синхронизацией
+    const gistUpdated = new Date(json.updated_at).getTime();
+    const lastSync    = parseInt(localStorage.getItem('sync_last') || '0');
+
     const content = json.files?.[GIST_FILE]?.content;
     if (!content) throw new Error('no file');
     const cloudData = JSON.parse(content);
-    if (Array.isArray(cloudData) && cloudData.length > transactions.length) {
+
+    if (Array.isArray(cloudData) && gistUpdated > lastSync) {
       transactions = cloudData;
       lsSave();
       renderAll();
+      if (manual) setSyncStatus('ok', `Обновлено, записей: ${transactions.length}`);
+    } else {
+      if (manual) setSyncStatus('ok', `Актуально, записей: ${transactions.length}`);
     }
-    if (manual) setSyncStatus('ok', `Синхронизировано, записей: ${transactions.length}`);
   } catch(e) {
     if (manual) setSyncStatus('err', 'Ошибка подключения к облаку');
   }
@@ -694,10 +702,16 @@ async function syncPush(manual) {
       signal: AbortSignal.timeout(8000)
     });
     if (!r.ok) throw new Error(r.status);
+    localStorage.setItem('sync_last', Date.now().toString());
     if (manual) setSyncStatus('ok', `Отправлено, записей: ${transactions.length}`);
   } catch(e) {
     if (manual) setSyncStatus('err', 'Ошибка отправки в облако');
   }
+}
+
+// Автоопрос — проверяет обновления каждые 30 секунд
+function startAutoSync() {
+  setInterval(() => syncPull(false), 30000);
 }
 
 // Заполнить поля если уже настроено
@@ -748,6 +762,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setType('expense');
   fillSyncInputs();
   loadData();
+  startAutoSync();
 });
 
 function toDateInput(d) {
