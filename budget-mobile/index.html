@@ -320,9 +320,19 @@
 <body>
 
 <header>
-  <h1>💰 Личный бюджет</h1>
-  <div class="month" id="headerMonth"></div>
-  <div id="serverStatus" style="font-size:11px;opacity:.8;margin-top:2px;">● подключение…</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <h1>💰 Личный бюджет</h1>
+      <div class="month" id="headerMonth"></div>
+      <div id="serverStatus" style="font-size:11px;opacity:.8;margin-top:2px;">● подключение…</div>
+    </div>
+    <button onclick="manualSync()" id="syncBtn"
+      style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+             color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;
+             margin-top:2px;white-space:nowrap">
+      🔄 Обновить
+    </button>
+  </div>
 </header>
 
 <!-- ── СТРАНИЦА: ГЛАВНАЯ ── -->
@@ -430,6 +440,54 @@
       <hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">
       <button class="btn-export clr" onclick="clearData()">🗑 Очистить все данные</button>
     </div>
+
+    <!-- ── Облачная синхронизация ── -->
+    <div class="export-area" style="margin-top:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:10px;">☁️ Облачная синхронизация</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+        Данные хранятся в GitHub Gist — доступны с любого телефона без Wi-Fi и без компьютера.
+      </p>
+
+      <!-- Форма настройки (показывается когда не подключено) -->
+      <div id="gistSetupForm">
+        <div class="form-row">
+          <label>GitHub токен <a href="https://github.com/settings/tokens/new?scopes=gist" target="_blank" style="color:var(--blue2);font-size:11px;">получить →</a></label>
+          <input type="password" id="ghToken" placeholder="ghp_..." style="font-size:14px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;width:100%">
+        </div>
+        <div class="form-row">
+          <input type="hidden" id="ghGistId" value="">
+        </div>
+        <button id="btnConnectGist" onclick="setupCloudSync()"
+          style="width:100%;padding:13px;background:var(--blue2);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">
+          Подключить облако
+        </button>
+      </div>
+
+      <!-- Статус (показывается когда подключено) -->
+      <div id="gistConnected" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="color:#4CAF50;font-size:18px;">✅</span>
+          <span style="font-size:14px;font-weight:600;">Облако подключено</span>
+        </div>
+        <div style="background:#F0F7FF;border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Gist ID (дай это второму телефону):</div>
+          <div id="gistIdDisplay" style="font-size:13px;font-weight:700;word-break:break-all;color:var(--blue)"></div>
+        </div>
+
+        <!-- Блок публикации на GitHub Pages -->
+        <div id="pagesSection" style="margin-bottom:12px;"></div>
+
+        <button onclick="copyGistLink()"
+          style="width:100%;padding:11px;background:#E8F4FD;color:var(--blue);border:1.5px solid #BDD7EE;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;">
+          📋 Скопировать Gist ID
+        </button>
+        <button onclick="disconnectGist()"
+          style="width:100%;padding:11px;background:var(--red2);color:var(--red);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+          Отключить облако
+        </button>
+      </div>
+    </div>
+
     <section style="margin-top:0;">
       <div class="section-title" style="margin-top:16px;">Всего записей: <span id="totalCount">0</span></div>
     </section>
@@ -536,33 +594,148 @@ const CAT_ICONS = {
 // ═══════════════════════════════════════════════════════
 let currentType  = 'expense';
 let transactions = [];
+let deletedIds   = [];        // tombstones — ID удалённых записей для синхронизации
 let serverOnline = false;
 
-const API      = '/api/data';
-const LS_KEY   = 'budget_tx';        // резерв в браузере
-const LS_DIRTY = 'budget_tx_dirty';  // флаг: есть несинхронизированные данные
+const API        = '/api/data';
+const LS_KEY     = 'budget_tx';
+const LS_DELETED = 'budget_deleted';
+const LS_DIRTY   = 'budget_tx_dirty';
 
-// ── localStorage (всегда доступен) ──────────────────────────────────
+// ── GitHub Gist (облачное хранилище) ────────────────────────────────
+const CFG_TOKEN    = 'budget_gh_token';
+const CFG_GIST_ID  = 'budget_gist_id';
+const CFG_PAGES_URL = 'budget_pages_url';
+// Публичный Gist — данные читаются без токена, токен нужен только для записи
+const PRESET_GIST_ID = 'ce71a320d0734d3671874f88a1fa9a5b';
+const getToken    = () => localStorage.getItem(CFG_TOKEN)    || '';
+const getGistId   = () => localStorage.getItem(CFG_GIST_ID)  || '';
+const getPagesUrl = () => localStorage.getItem(CFG_PAGES_URL) || '';
+const isGistOn    = () => !!(getToken() && getGistId());
+
+const GIST_HEADERS = () => ({
+  'Authorization': `Bearer ${getToken()}`,
+  'X-GitHub-Api-Version': '2022-11-28',
+  'Content-Type': 'application/json',
+});
+
+// Прямой запрос к GitHub (когда телефон имеет интернет)
+async function ghFetch(method, path, body) {
+  const r = await fetch('https://api.github.com' + path, {
+    method, headers: GIST_HEADERS(), cache: 'no-store',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+// Через прокси локального сервера (когда телефон в домашней сети)
+async function ghProxy(method, path, body) {
+  const r = await fetch('/api/gist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ method, path, token: getToken(), body }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const msg = data.message || String(r.status);
+    throw new Error(msg + ' [' + r.status + ']');
+  }
+  return data;
+}
+
+// Прокси нужен только в домашней сети (когда запущен локальный сервер)
+const isLocalNetwork = () => /^(localhost|127\.|192\.|10\.|172\.)/.test(location.hostname);
+
+async function ghCall(method, path, body) {
+  try { return await ghFetch(method, path, body); }
+  catch(e) {
+    if (isLocalNetwork()) return await ghProxy(method, path, body);
+    throw e;
+  }
+}
+
+async function gistGet() {
+  const g = await ghCall('GET', `/gists/${getGistId()}`);
+  const d = JSON.parse(g.files?.['budget.json']?.content || '{}');
+  return { transactions: d.transactions || [], deleted: d.deleted || [] };
+}
+
+// Чтение публичного Gist без токена — для PWA и первого запуска
+async function gistGetPublic() {
+  const id = getGistId() || PRESET_GIST_ID;
+  const r  = await fetch('https://api.github.com/gists/' + id, {
+    cache: 'no-store',
+    headers: { 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'BudgetApp' },
+  });
+  if (!r.ok) throw new Error(r.status);
+  const g = await r.json();
+  const d = JSON.parse(g.files?.['budget.json']?.content || '{}');
+  return { transactions: d.transactions || [], deleted: d.deleted || [] };
+}
+
+async function gistPut(payload) {
+  await ghCall('PATCH', `/gists/${getGistId()}`, {
+    files: { 'budget.json': { content: JSON.stringify({
+      transactions: payload.transactions, deleted: payload.deleted, updatedAt: Date.now()
+    })}}
+  });
+}
+
+async function gistCreate() {
+  const g = await ghCall('POST', '/gists', {
+    description: 'Личный бюджет — синхронизация',
+    public: false,
+    files: { 'budget.json': { content: JSON.stringify(
+      { transactions, deleted: deletedIds, updatedAt: Date.now() }
+    )}},
+  });
+  return g.id;
+}
+
+// ── localStorage ─────────────────────────────────────────────────────
 function lsSave() {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(transactions));
+    localStorage.setItem(LS_KEY,     JSON.stringify(transactions));
+    localStorage.setItem(LS_DELETED, JSON.stringify(deletedIds));
   } catch(e) {}
 }
 
 function lsLoad() {
   try {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch(e) { return []; }
+    const txRaw  = localStorage.getItem(LS_KEY);
+    const delRaw = localStorage.getItem(LS_DELETED);
+    return {
+      transactions: txRaw  ? JSON.parse(txRaw)  : [],
+      deleted:      delRaw ? JSON.parse(delRaw) : [],
+    };
+  } catch(e) { return { transactions: [], deleted: [] }; }
 }
 
-// ── Индикатор статуса сервера ─────────────────────────────────────
-function setServerStatus(online) {
+// ── Слияние данных двух устройств ────────────────────────────────────
+// Объединяет транзакции по ID, исключая удалённые (tombstones)
+function mergeData(localTxs, localDel, serverTxs, serverDel) {
+  const allDeleted = new Set([...localDel, ...serverDel]);
+  const map = new Map();
+  for (const tx of [...serverTxs, ...localTxs]) {
+    if (!allDeleted.has(tx.id) && !map.has(tx.id)) {
+      map.set(tx.id, tx);
+    }
+  }
+  const merged = [...map.values()].sort((a, b) => b.id - a.id);
+  return { transactions: merged, deleted: [...allDeleted] };
+}
+
+// Возвращает строку из отсортированных ID для быстрого сравнения
+function idsStr(txs) { return txs.map(t => t.id).sort().join(','); }
+
+// ── Индикатор статуса ─────────────────────────────────────────────────
+function setServerStatus(online, source) {
   serverOnline = online;
   const el = document.getElementById('serverStatus');
   if (!el) return;
   if (online) {
-    el.textContent = '● онлайн';
+    el.textContent = source === 'gist' ? '☁️ облако' : '● онлайн (Wi-Fi)';
     el.style.color = '#4CAF50';
   } else {
     el.textContent = '● офлайн — данные сохранены локально';
@@ -570,96 +743,146 @@ function setServerStatus(online) {
   }
 }
 
-// ── Загрузка: сервер → если пуст/недоступен → localStorage ─────────
+// ── Загрузка: localStorage → Gist (если настроен) → локальный сервер ─
 async function loadData() {
-  // Сначала показываем локальные данные мгновенно
-  const local = lsLoad();
-  if (local.length > 0) {
-    transactions = local;
-    renderAll();
+  const { transactions: localTxs, deleted: localDel } = lsLoad();
+  transactions = localTxs;
+  deletedIds   = localDel;
+  if (localTxs.length > 0) renderAll();
+
+  if (isGistOn() || PRESET_GIST_ID) {
+    try {
+      const remote = isGistOn() ? await gistGet() : await gistGetPublic();
+      const { transactions: merged, deleted: mergedDel } =
+        mergeData(localTxs, localDel, remote.transactions, remote.deleted);
+      const needsPush = isGistOn() && idsStr(merged) !== idsStr(remote.transactions);
+      transactions = merged; deletedIds = mergedDel;
+      lsSave(); localStorage.removeItem(LS_DIRTY);
+      if (needsPush) await gistPut({ transactions: merged, deleted: mergedDel });
+      setServerStatus(true, 'gist');
+      renderAll();
+      return;
+    } catch(e) { setServerStatus(false); }
   }
 
+  // Резервный вариант — локальный сервер (когда компьютер в той же сети)
   try {
-    const r = await fetch(API, { signal: AbortSignal.timeout(4000) });
-    const serverData = await r.json();
-
-    // Если на сервере больше данных — берём серверные
-    // Если localStorage новее (dirty) — отправляем их на сервер
-    const dirty = localStorage.getItem(LS_DIRTY) === '1';
-    if (dirty && local.length >= serverData.length) {
-      // Локальные данные новее — синхронизируем на сервер
-      await pushToServer(local);
-      transactions = local;
-      localStorage.removeItem(LS_DIRTY);
-      showToast('Данные синхронизированы с сервером');
-    } else {
-      transactions = serverData.length > 0 ? serverData : local;
-      lsSave();
-    }
-    setServerStatus(true);
-  } catch (e) {
-    // Сервер недоступен — работаем с localStorage
-    transactions = local;
-    setServerStatus(false);
-  }
+    const r   = await fetch(API + '?_t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    const raw = await r.json();
+    const serverTxs = Array.isArray(raw) ? raw : (raw.transactions || []);
+    const serverDel = Array.isArray(raw) ? [] : (raw.deleted      || []);
+    const { transactions: merged, deleted: mergedDel } = mergeData(localTxs, localDel, serverTxs, serverDel);
+    const serverOutdated = idsStr(merged) !== idsStr(serverTxs);
+    transactions = merged; deletedIds = mergedDel;
+    lsSave(); localStorage.removeItem(LS_DIRTY);
+    if (serverOutdated) await pushToServer();
+    setServerStatus(true, 'local');
+  } catch(e) { setServerStatus(false); }
   renderAll();
 }
 
-// ── Сохранение: и в localStorage, и на сервер ───────────────────────
+// ── Сохранение: localStorage → Gist (приоритет) → локальный сервер ──
 async function saveData() {
-  // 1. Сначала всегда сохраняем локально — это мгновенно и надёжно
   lsSave();
+  const payload = { transactions, deleted: deletedIds };
 
-  // 2. Пробуем отправить на сервер
+  if (isGistOn()) {
+    try {
+      await gistPut(payload);
+      localStorage.removeItem(LS_DIRTY);
+      setServerStatus(true, 'gist');
+      return;
+    } catch(e) {
+      localStorage.setItem(LS_DIRTY, '1');
+      setServerStatus(false);
+      return;
+    }
+  }
+
   try {
-    await pushToServer(transactions);
+    await pushToServer();
     localStorage.removeItem(LS_DIRTY);
-    setServerStatus(true);
-  } catch (e) {
-    // Сервер недоступен — помечаем как «надо синхронизировать»
+    setServerStatus(true, 'local');
+  } catch(e) {
     localStorage.setItem(LS_DIRTY, '1');
     setServerStatus(false);
   }
 }
 
-async function pushToServer(data) {
+async function pushToServer() {
   const r = await fetch(API, {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    signal: AbortSignal.timeout(4000),
+    body:    JSON.stringify({ transactions, deleted: deletedIds, updatedAt: Date.now() }),
+    signal:  AbortSignal.timeout(4000),
   });
   if (!r.ok) throw new Error('Server error');
 }
 
-// ── Автосинхронизация ─────────────────────────────────────────────
+// ── Автосинхронизация: Gist каждые 30 сек, Wi-Fi каждые 5 сек ───────
 function startAutoSync() {
-  setInterval(async () => {
-    // Если есть несинхронизированные данные — попробовать отправить
-    if (localStorage.getItem(LS_DIRTY) === '1') {
+  async function doSync() {
+    const dirty = localStorage.getItem(LS_DIRTY) === '1';
+
+    if (isGistOn() || PRESET_GIST_ID) {
       try {
-        await pushToServer(transactions);
-        localStorage.removeItem(LS_DIRTY);
-        setServerStatus(true);
-        showToast('Данные синхронизированы');
-      } catch(e) {}
+        const remote = isGistOn() ? await gistGet() : await gistGetPublic();
+        const { transactions: merged, deleted: mergedDel } =
+          mergeData(transactions, deletedIds, remote.transactions, remote.deleted);
+        const clientOld = idsStr(merged) !== idsStr(transactions);
+        const remoteOld = isGistOn() && (idsStr(merged) !== idsStr(remote.transactions) || dirty);
+        if (clientOld) { transactions = merged; deletedIds = mergedDel; lsSave(); renderAll(); }
+        if (remoteOld) { await gistPut({ transactions: merged, deleted: mergedDel }); localStorage.removeItem(LS_DIRTY); }
+        setServerStatus(true, 'gist');
+      } catch(e) { setServerStatus(false); }
+      setTimeout(doSync, 30000);
       return;
     }
 
-    // Иначе — проверить обновления с других устройств
+    // Локальный сервер
     try {
-      const r = await fetch(API, { signal: AbortSignal.timeout(4000) });
-      const serverData = await r.json();
-      if (serverData.length !== transactions.length) {
-        transactions = serverData;
-        lsSave();
-        renderAll();
-      }
-      setServerStatus(true);
-    } catch(e) {
-      setServerStatus(false);
-    }
-  }, 10000);
+      const r   = await fetch(API + '?_t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+      const raw = await r.json();
+      const serverTxs = Array.isArray(raw) ? raw : (raw.transactions || []);
+      const serverDel = Array.isArray(raw) ? [] : (raw.deleted      || []);
+      const { transactions: merged, deleted: mergedDel } = mergeData(transactions, deletedIds, serverTxs, serverDel);
+      const clientOld = idsStr(merged) !== idsStr(transactions);
+      const serverOld = idsStr(merged) !== idsStr(serverTxs) || dirty;
+      if (clientOld) { transactions = merged; deletedIds = mergedDel; lsSave(); renderAll(); }
+      if (serverOld) { transactions = merged; deletedIds = mergedDel; await pushToServer(); localStorage.removeItem(LS_DIRTY); }
+      setServerStatus(true, 'local');
+    } catch(e) { setServerStatus(false); }
+    setTimeout(doSync, 5000);
+  }
+
+  setTimeout(doSync, isGistOn() ? 30000 : 5000);
+}
+
+async function manualSync() {
+  const btn = document.getElementById('syncBtn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const r   = await fetch(API + '?_t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    const raw = await r.json();
+    const serverTxs = Array.isArray(raw) ? raw : (raw.transactions || []);
+    const serverDel = Array.isArray(raw) ? [] : (raw.deleted      || []);
+    const { transactions: merged, deleted: mergedDel } = mergeData(transactions, deletedIds, serverTxs, serverDel);
+    const clientOutdated = idsStr(merged) !== idsStr(transactions);
+    const serverOutdated = idsStr(merged) !== idsStr(serverTxs);
+    transactions = merged;
+    deletedIds   = mergedDel;
+    lsSave();
+    if (serverOutdated) await pushToServer();
+    setServerStatus(true);
+    if (clientOutdated) { renderAll(); showToast('Данные обновлены'); }
+    else showToast('Уже актуально');
+  } catch(e) {
+    setServerStatus(false);
+    showToast('Сервер недоступен');
+  }
+  btn.textContent = '🔄 Обновить';
+  btn.disabled = false;
 }
 
 function renderAll() {
@@ -674,15 +897,264 @@ function renderAll() {
 // ═══════════════════════════════════════════════════════
 // ИНИЦИАЛИЗАЦИЯ
 // ═══════════════════════════════════════════════════════
+// ── Облачная синхронизация — UI ───────────────────────────────────────
+async function setupCloudSync() {
+  const token  = document.getElementById('ghToken').value.trim();
+  const gistId = document.getElementById('ghGistId').value.trim();
+  if (!token) { showToast('Введите токен'); return; }
+
+  const btn = document.getElementById('btnConnectGist');
+  btn.textContent = '⏳ Подключение…'; btn.disabled = true;
+
+  localStorage.setItem(CFG_TOKEN, token);
+  try {
+    // Проверяем токен (прямо или через прокси)
+    let testOk = false, testMsg = '';
+    try {
+      const res = await ghCall('GET', '/user');
+      testOk = !!res.login;
+      testMsg = res.message || '';
+    } catch(e) { testMsg = e.message; }
+    if (!testOk) {
+      showToast('Токен неверный: ' + testMsg);
+      localStorage.removeItem(CFG_TOKEN);
+      btn.textContent = 'Подключить облако'; btn.disabled = false;
+      return;
+    }
+
+    let id = gistId || PRESET_GIST_ID;
+    if (!id) {
+      id = await gistCreate();
+      localStorage.setItem(CFG_GIST_ID, id);
+      showToast('Хранилище создано ✓');
+    } else {
+      // Сохранить gistId ДО вызова gistGet(), иначе getGistId() вернёт пустую строку
+      localStorage.setItem(CFG_GIST_ID, id);
+      // Загрузить и слить данные из существующего Gist
+      const remote = await gistGet();
+      const { transactions: merged, deleted: mergedDel } =
+        mergeData(transactions, deletedIds, remote.transactions, remote.deleted);
+      transactions = merged; deletedIds = mergedDel; lsSave();
+      if (idsStr(merged) !== idsStr(remote.transactions))
+        await gistPut({ transactions: merged, deleted: mergedDel });
+      renderAll();
+      showToast('Данные загружены из облака ✓');
+    }
+    renderCloudSyncUI();
+    // Отправляем токен на сервер — он автоматически опубликует на GitHub Pages
+    autoSetupPages(token);
+  } catch(e) {
+    showToast('Ошибка: ' + e.message);
+    localStorage.removeItem(CFG_TOKEN);
+  }
+  btn.textContent = 'Подключить облако'; btn.disabled = false;
+}
+
+async function autoSetupPages(token) {
+  try {
+    await fetch('/api/autosetup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    // Через 90 секунд проверяем — GitHub Pages уже может быть готов
+    setTimeout(fetchPagesUrl, 90000);
+  } catch(e) { /* сервер недоступен — ничего страшного */ }
+}
+
+async function fetchPagesUrl() {
+  if (getPagesUrl()) return;
+  try {
+    const r   = await fetch('/api/config?_t=' + Date.now(), { cache: 'no-store' });
+    const cfg = await r.json();
+    if (cfg.pages_url) {
+      localStorage.setItem(CFG_PAGES_URL, cfg.pages_url);
+      renderPagesSection();
+      showToast('Постоянная ссылка готова ✓');
+    }
+  } catch(e) {}
+}
+
+function disconnectGist() {
+  if (!confirm('Отключить облачную синхронизацию? Данные на устройстве сохранятся.')) return;
+  localStorage.removeItem(CFG_TOKEN);
+  localStorage.removeItem(CFG_GIST_ID);
+  renderCloudSyncUI();
+  showToast('Облако отключено');
+}
+
+// ── GitHub Pages публикация ───────────────────────────────────────────
+
+async function ghCallWith(token, method, path, body) {
+  const headers = {
+    'Authorization': `Bearer ${token}`,
+    'X-GitHub-Api-Version': '2022-11-28',
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github+json',
+  };
+  const r = await fetch('https://api.github.com' + path, {
+    method, headers, cache: 'no-store',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((data.message || r.status) + ' [' + r.status + ']');
+  return data;
+}
+
+async function uploadToRepo(token, owner, repo, path, content) {
+  let sha = null;
+  try {
+    const f = await ghCallWith(token, 'GET', `/repos/${owner}/${repo}/contents/${path}`);
+    sha = f.sha;
+  } catch(e) {}
+  const b64 = btoa(unescape(encodeURIComponent(content)));
+  await ghCallWith(token, 'PUT', `/repos/${owner}/${repo}/contents/${path}`, {
+    message: `Update ${path}`,
+    content: b64,
+    ...(sha ? { sha } : {}),
+  });
+}
+
+async function publishToGitHubPages() {
+  const token = (document.getElementById('pagesToken')?.value || '').trim() || getToken();
+  if (!token) { showToast('Введите токен'); return; }
+  const btn = document.getElementById('btnPublish');
+  if (btn) { btn.textContent = '⏳ Публикация…'; btn.disabled = true; }
+  try {
+    const user  = await ghCallWith(token, 'GET', '/user');
+    const owner = user.login;
+    const repo  = 'budget-app';
+
+    // Создаём репозиторий (игнорируем ошибку если уже существует)
+    try {
+      await ghCallWith(token, 'POST', '/user/repos', {
+        name: repo, description: 'Личный бюджет — мобильное приложение',
+        private: false, auto_init: true,
+      });
+      await new Promise(r => setTimeout(r, 3000));
+    } catch(e) { /* уже существует */ }
+
+    // manifest.json
+    await uploadToRepo(token, owner, repo, 'manifest.json', JSON.stringify({
+      name: 'Личный бюджет', short_name: 'Бюджет',
+      start_url: './', display: 'standalone',
+      background_color: '#F5F5F5', theme_color: '#1F4E79',
+    }));
+
+    // sw.js с правильными путями для любого хоста
+    const swContent = `const CACHE='budget-v5';
+const BASE=new URL('.',self.location).pathname.replace(/\\/$/,'');
+const SHELL=[BASE+'/index.html',BASE+'/manifest.json'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
+self.addEventListener('fetch',e=>{const url=new URL(e.request.url);if(url.pathname.includes('/api/')||url.hostname==='api.github.com')return;e.respondWith(caches.match(e.request).then(cached=>{const net=fetch(e.request).then(res=>{if(res.ok)caches.open(CACHE).then(c=>c.put(e.request,res.clone()));return res;}).catch(()=>cached);return cached||net;}));});`;
+    await uploadToRepo(token, owner, repo, 'sw.js', swContent);
+
+    // index.html — берём исходник с сервера
+    let html;
+    try {
+      const r = await fetch('/index.html?_t=' + Date.now(), { cache: 'no-store' });
+      html = await r.text();
+    } catch(e) {
+      html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    }
+    await uploadToRepo(token, owner, repo, 'index.html', html);
+
+    // Включаем GitHub Pages
+    try {
+      await ghCallWith(token, 'POST', `/repos/${owner}/${repo}/pages`, {
+        source: { branch: 'main', path: '/' },
+      });
+    } catch(e) { /* уже включено */ }
+
+    const pagesUrl = `https://${owner}.github.io/${repo}/`;
+    localStorage.setItem(CFG_PAGES_URL, pagesUrl);
+    renderCloudSyncUI();
+    showToast('Готово! Ссылка появится через 1-2 минуты ✓');
+  } catch(e) {
+    showToast('Ошибка: ' + e.message);
+  }
+  if (btn) { btn.textContent = '🌐 Опубликовать'; btn.disabled = false; }
+}
+
+function renderCloudSyncUI() {
+  const on = isGistOn();
+  document.getElementById('gistSetupForm').style.display = on ? 'none'  : 'block';
+  document.getElementById('gistConnected').style.display = on ? 'block' : 'none';
+  if (on) {
+    document.getElementById('gistIdDisplay').textContent = getGistId();
+    renderPagesSection();
+  }
+}
+
+function renderPagesSection() {
+  const el = document.getElementById('pagesSection');
+  if (!el) return;
+  const url = getPagesUrl();
+  if (url) {
+    const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=' + encodeURIComponent(url);
+    el.innerHTML = `<div style="background:#E8F5E9;border:1.5px solid #A5D6A7;border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:#2E7D32;margin-bottom:6px;">🌐 Постоянная ссылка</div>
+      <div style="font-size:12px;word-break:break-all;color:var(--blue);font-weight:600;margin-bottom:10px;">${url}</div>
+      <img src="${qr}" width="160" height="160" style="border-radius:6px;margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Откройте с любого телефона в любой сети</div>
+      <button onclick="copyPagesUrl()" style="width:100%;padding:9px;background:#C8E6C9;color:#2E7D32;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📋 Скопировать ссылку</button>
+    </div>`;
+  } else {
+    el.innerHTML = `<div style="background:#FFF3E0;border:1.5px solid #FFCC80;border-radius:10px;padding:14px;">
+      <div style="font-size:13px;font-weight:700;color:#E65100;margin-bottom:4px;">🌐 Опубликуйте приложение в интернет</div>
+      <div style="font-size:12px;color:#795548;margin-bottom:8px;line-height:1.6;">
+        После публикации приложение будет доступно с любого телефона без Wi-Fi.<br>
+        Нужен токен с правом <b>public_repo</b> + <b>gist</b>.<br>
+        <a href="https://github.com/settings/tokens/new?scopes=gist,public_repo" target="_blank" style="color:var(--blue2);">➜ Создать токен на GitHub</a>
+      </div>
+      <input type="password" id="pagesToken" placeholder="ghp_... (с public_repo)"
+        style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:8px;">
+      <button id="btnPublish" onclick="publishToGitHubPages()"
+        style="width:100%;padding:11px;background:#E65100;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">
+        🌐 Опубликовать
+      </button>
+    </div>`;
+  }
+}
+
+function copyPagesUrl() {
+  const url = getPagesUrl();
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('Ссылка скопирована'))
+    .catch(() => prompt('Скопируйте ссылку:', url));
+}
+
+function copyGistLink() {
+  navigator.clipboard.writeText(getGistId())
+    .then(() => showToast('Gist ID скопирован'))
+    .catch(() => {
+      prompt('Скопируй Gist ID:', getGistId());
+    });
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+  // Регистрация сервис-воркера (офлайн-кеш страницы)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
   const now = new Date();
   document.getElementById('headerMonth').textContent =
     now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
   document.getElementById('txDate').value = toDateInput(now);
 
   setType('expense');
+  // Автозаполнение Gist ID если ещё не настроен
+  if (!getGistId() && PRESET_GIST_ID) {
+    const inp = document.getElementById('ghGistId');
+    if (inp) inp.value = PRESET_GIST_ID;
+  }
+  renderCloudSyncUI();
   await loadData();
   startAutoSync();
+  // Подтягиваем Pages URL с сервера (если ещё не сохранён локально)
+  fetchPagesUrl();
 });
 
 function toDateInput(d) {
@@ -864,6 +1336,7 @@ function txHTML(t, showDel) {
 async function deleteTx(id) {
   if (!confirm('Удалить запись?')) return;
   transactions = transactions.filter(t => t.id !== id);
+  deletedIds.push(id);  // tombstone — чтобы другие устройства тоже удалили запись
   await saveData();
   renderHome();
   renderHistory();
@@ -967,6 +1440,7 @@ function handleImport(e) {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data)) throw new Error();
       transactions = data;
+      deletedIds   = [];  // при импорте сбрасываем tombstones
       await saveData();
       renderHome(); renderHistory(); renderStats();
       showToast(`Импортировано ${data.length} записей`);
@@ -981,6 +1455,7 @@ function handleImport(e) {
 async function clearData() {
   if (!confirm('Удалить ВСЕ записи? Это действие нельзя отменить.')) return;
   transactions = [];
+  deletedIds   = [];
   await saveData();
   renderHome(); renderHistory(); renderStats();
   document.getElementById('totalCount').textContent = 0;
